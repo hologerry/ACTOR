@@ -1,16 +1,17 @@
-import os
 import glob
 import math
+import os
 import re
+
 import numpy as np
 
-from .tools import load_metrics
+from src.evaluate.tools import load_metrics
 
 
 def valformat(val, power=3):
     p = float(pow(10, power))
     # "{:<04}".format(np.round(p*val).astype(int)/p)
-    return str(np.round(p*val).astype(int)/p).ljust(5, "0")
+    return str(np.round(p * val).astype(int) / p).ljust(5, "0")
 
 
 def construct_table(folder):
@@ -27,11 +28,23 @@ def construct_table(folder):
 
         modelname = os.path.split(os.path.split(path)[0])[1]
 
-        for info in ["vibe", "rot6d", "glob", "translation", "numlayers_8",
-                     "numframes_60", "sampling_conseq", "samplingstep_1", "jointstype",
-                     "gelu", "kl_1e-05", "cvae", "ntu13"]:
+        for info in [
+            "vibe",
+            "rot6d",
+            "glob",
+            "translation",
+            "numlayers_8",
+            "numframes_60",
+            "sampling_conseq",
+            "samplingstep_1",
+            "jointstype",
+            "gelu",
+            "kl_1e-05",
+            "cvae",
+            "ntu13",
+        ]:
             modelname = modelname.replace(info, "")
-            
+
         modelname = re.sub("_{1,}", " ", modelname)
 
         # takin GT only for the first one
@@ -46,7 +59,7 @@ def construct_table(folder):
                 string = rf"${mean}$"  # ^{{\pm{interval}}}$"
                 gtrow.append(string)
             gtrow = " & ".join(gtrow) + r"\\"
-                
+
         rows = []
         for model in ["gen"]:  # ["gt", "gen", "recons"]:
             # row = ["{} {}".format(modelname, model)]
@@ -64,18 +77,24 @@ def construct_table(folder):
         models_result = "\n        ".join(rows)
         models_results.append(models_result)
 
-    sorting = ["former rc kl", "former rcxyz kl", "former rc rcxyz kl",
-               "former rc rcxyz vel kl", "former rc rcxyz velxyz kl",
-               "former rc rcxyz vel velxyz kl"]
+    sorting = [
+        "former rc kl",
+        "former rcxyz kl",
+        "former rc rcxyz kl",
+        "former rc rcxyz vel kl",
+        "former rc rcxyz velxyz kl",
+        "former rc rcxyz vel velxyz kl",
+    ]
 
-    changing = {"rc": r"$\mathcal{L}_{R}$",
-                "rcxyz": r"$\mathcal{L}_{O}$",
-                "vel": r"$\mathcal{L}_{\Delta R}$",
-                "velxyz": r"$\mathcal{L}_{\Delta O}$"}
-    
-    changing_jointstype = {"smpl": "J",
-                           "vertices": "V"}
-    
+    changing = {
+        "rc": r"$\mathcal{L}_{R}$",
+        "rcxyz": r"$\mathcal{L}_{O}$",
+        "vel": r"$\mathcal{L}_{\Delta R}$",
+        "velxyz": r"$\mathcal{L}_{\Delta O}$",
+    }
+
+    changing_jointstype = {"smpl": "J", "vertices": "V"}
+
     sorted_models = [gtrow, "        \\midrule\n"]
     for sortkey in sorting:
         for models_result in models_results:
@@ -89,13 +108,13 @@ def construct_table(folder):
                     if jtype in changing_jointstype:
                         renaming = renaming.replace("O", changing_jointstype[jtype])
                     wlosses.append(renaming)
-                
+
                 models_result = models_result.replace(modelsname, " + ".join(wlosses))
                 sorted_models.append(models_result)
-                
+
     # MODELS = "\n        \\midrule\n".join(sorted_models)
     MODELS = "\n".join(sorted_models) + "\n"
-    
+
     template = r"""\documentclass{{standalone}}
 \usepackage{{booktabs}}
 \usepackage[dvipsnames]{{xcolor}}
@@ -111,7 +130,9 @@ def construct_table(folder):
         \bottomrule
     \end{{tabular}}
 \end{{document}}
-""".format(MODELS=MODELS)
+""".format(
+        MODELS=MODELS
+    )
     return template
 
 
@@ -127,11 +148,11 @@ if __name__ == "__main__":
     exppath = opt.exppath
 
     folder = exppath
-    
+
     tex = construct_table(folder)
     texpath = os.path.join(folder, "table.tex")
 
     with open(texpath, "w") as ftex:
         ftex.write(tex)
-        
+
     print(f"Table saved at {texpath}")

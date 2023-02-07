@@ -1,9 +1,11 @@
 # This file is taken from signjoey repository
 import math
+
 import torch
 
-from torch import nn, Tensor
-from ....tools.tools import freeze_params
+from torch import Tensor, nn
+
+from src.models.tools.tools import freeze_params
 
 
 def get_activation(activation_type):
@@ -37,8 +39,8 @@ def get_activation(activation_type):
 
 class MaskedNorm(nn.Module):
     """
-        Original Code from:
-        https://discuss.pytorch.org/t/batchnorm-for-different-sized-samples-in-batch/44251/8
+    Original Code from:
+    https://discuss.pytorch.org/t/batchnorm-for-different-sized-samples-in-batch/44251/8
     """
 
     def __init__(self, norm_type, num_groups, num_features):
@@ -59,9 +61,7 @@ class MaskedNorm(nn.Module):
         if self.training:
             reshaped = x.reshape([-1, self.num_features])
             reshaped_mask = mask.reshape([-1, 1]) > 0
-            selected = torch.masked_select(reshaped, reshaped_mask).reshape(
-                [-1, self.num_features]
-            )
+            selected = torch.masked_select(reshaped, reshaped_mask).reshape([-1, self.num_features])
             batch_normed = self.norm(selected)
             scattered = reshaped.masked_scatter(reshaped_mask, batch_normed)
             return scattered.reshape([x.shape[0], -1, self.num_features])
@@ -112,9 +112,7 @@ class Embeddings(nn.Module):
 
         self.norm_type = norm_type
         if self.norm_type:
-            self.norm = MaskedNorm(
-                norm_type=norm_type, num_groups=num_heads, num_features=embedding_dim
-            )
+            self.norm = MaskedNorm(norm_type=norm_type, num_groups=num_heads, num_features=embedding_dim)
 
         self.activation_type = activation_type
         if self.activation_type:
@@ -197,9 +195,7 @@ class SpatialEmbeddings(nn.Module):
 
         self.norm_type = norm_type
         if self.norm_type:
-            self.norm = MaskedNorm(
-                norm_type=norm_type, num_groups=num_heads, num_features=embedding_dim
-            )
+            self.norm = MaskedNorm(norm_type=norm_type, num_groups=num_heads, num_features=embedding_dim)
 
         self.activation_type = activation_type
         if self.activation_type:

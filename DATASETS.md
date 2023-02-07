@@ -5,7 +5,7 @@ For all the datasets, be sure to **read** and **follow** their license agreement
 
 ## How was the data prepared?
 ### NTU13 ("Refined NTU-RGBD")
-Donwload the data from the [Action2Motion webpage](https://ericguo5513.github.io/action-to-motion/) and extract it to the ``data/ntu13/`` folder.
+Download the data from the [Action2Motion webpage](https://ericguo5513.github.io/action-to-motion/) and extract it to the ``data/ntu13/`` folder.
 
 **Update** (from Action2Motion website): "Due to the Release Agreement of NTU-RGBD dataset, we are not allowed to and will no longer provide the access to our re-estimated NTU-RGBD data."
 

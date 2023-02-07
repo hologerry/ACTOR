@@ -1,11 +1,15 @@
-import numpy as np
+import os
 import pickle as pkl
 import tarfile
-import os
+
+import numpy as np
 import scipy.io as sio
-from tqdm import tqdm
-import src.utils.rotation_conversions as geometry
 import torch
+
+from tqdm import tqdm
+
+import src.utils.rotation_conversions as geometry
+
 
 W = 960
 H = 540
@@ -23,9 +27,7 @@ def get_kinect_motion(tar, videos, index):
 
 
 def motionto2d(motion, W=960, H=540):
-    K = np.array(((540, 0, W / 2),
-                  (0, 540, H / 2),
-                  (0, 0, 1)))
+    K = np.array(((540, 0, W / 2), (0, 540, H / 2), (0, 0, 1)))
     motion[..., 1] = -motion[..., 1]
     motion2d = np.einsum("tjk,lk->tjl", motion, K)
     nonzeroix = np.where(motion2d[..., 2] != 0)
@@ -35,14 +37,14 @@ def motionto2d(motion, W=960, H=540):
 
 def motionto2dvibe(motion, cam):
     sx, sy, tx, ty = cam
-    return (motion[..., :2] + [tx, ty]) * [W/2*sx, H/2*sy] + [W/2, H/2]
+    return (motion[..., :2] + [tx, ty]) * [W / 2 * sx, H / 2 * sy] + [W / 2, H / 2]
 
 
 def get_kcenter(tar, videos, index):
     kmotion2d = motionto2d(get_kinect_motion(tar, videos, index))
     kboxes = np.hstack((kmotion2d.min(1), kmotion2d.max(1)))
     x1, y1, x2, y2 = kboxes.T
-    kcenter = np.stack(((x1 + x2)/2, (y1 + y2)/2)).T
+    kcenter = np.stack(((x1 + x2) / 2, (y1 + y2) / 2)).T
     return kcenter
 
 
@@ -65,7 +67,9 @@ def get_concat_goodtracks(allvibe, tar, videos, index):
         candidate_max = idxall[tracks[remainingmask][candidate]]["frame_ids"][-1]
 
         # look for other candidate which intersect with the candidate (conflict)
-        candidates = np.where(np.array([idxall[track]["frame_ids"][0] <= candidate_max for track in tracks[remainingmask]]))[0]
+        candidates = np.where(
+            np.array([idxall[track]["frame_ids"][0] <= candidate_max for track in tracks[remainingmask]])
+        )[0]
 
         # if the candidate is alone, take it
         if len(candidates) == 1:
@@ -77,8 +81,10 @@ def get_concat_goodtracks(allvibe, tar, videos, index):
                 lastbox = kcenter[0]
             else:  # take the last boxe output
                 lastbox = idxall[currenttrack]["bboxes"][-1, :2]
-            dists = np.linalg.norm([idxall[tracks[remainingmask][candidate]]["bboxes"][0, :2] - lastbox
-                                    for candidate in candidates], axis=1)
+            dists = np.linalg.norm(
+                [idxall[tracks[remainingmask][candidate]]["bboxes"][0, :2] - lastbox for candidate in candidates],
+                axis=1,
+            )
             idx = np.where(remainingmask)[0][candidates[np.argmin(dists)]]
 
         # compute informations
@@ -89,8 +95,7 @@ def get_concat_goodtracks(allvibe, tar, videos, index):
         # filter overlapping frames
         remainingmask = np.array([idxall[track]["frame_ids"][0] > lastframe for track in tracks]) & remainingmask
 
-    goodvibe = {key: [] for key in ['pred_cam', 'orig_cam', 'pose',
-                                    'betas', 'joints3d', 'bboxes', 'frame_ids']}
+    goodvibe = {key: [] for key in ["pred_cam", "orig_cam", "pose", "betas", "joints3d", "bboxes", "frame_ids"]}
 
     for key in goodvibe:
         goodvibe[key] = np.concatenate([idxall[track][key] for track in vibetracks])
@@ -113,7 +118,7 @@ def interpolate_track(gvibe):
 
         for key in saveall.keys():
             # save the segment before the cut
-            saveall[key].append(gvibe[key][lastend:begin+1])
+            saveall[key].append(gvibe[key][lastend : begin + 1])
 
             # extract the last good info
             lastgoodinfo = gvibe[key][begin]
@@ -130,24 +135,23 @@ def interpolate_track(gvibe):
                 # It is not optimal but it is better than nothing
                 # newfirstgoodinfo = torch.where((torch.argmin(torch.stack((torch.linalg.norm(q0-q1, axis=1),
                 # torch.linalg.norm(q0-q2, axis=1))), axis=0) == 0)[:, None], q1, q2)
-                first = [q1[0], q2[0]][np.argmin((torch.linalg.norm(q0[0]-q1[0]),
-                                                  torch.linalg.norm(q0[0]-q2[0])))]
+                first = [q1[0], q2[0]][np.argmin((torch.linalg.norm(q0[0] - q1[0]), torch.linalg.norm(q0[0] - q2[0])))]
                 newfirstgoodinfo = q1
                 newfirstgoodinfo[0] = first
                 lastgoodinfo = q0
 
             # interpolate in between
             interinfo = []
-            for x in range(lastgoodidx+1, firstnewgoodidx):
+            for x in range(lastgoodidx + 1, firstnewgoodidx):
                 # linear coeficient
                 w2 = x - lastgoodidx
                 w1 = firstnewgoodidx - x
-                w1, w2 = w1/(w1+w2), w2/(w1+w2)
+                w1, w2 = w1 / (w1 + w2), w2 / (w1 + w2)
 
                 inter = lastgoodinfo * w1 + newfirstgoodinfo * w2
                 if key == "pose":  # interpolate in quaternions
                     # normalize the quaternion
-                    inter = inter/torch.linalg.norm(inter, axis=1)[:, None]
+                    inter = inter / torch.linalg.norm(inter, axis=1)[:, None]
                     inter = geometry.quaternion_to_axis_angle(inter).numpy().reshape(-1)
 
                 interinfo.append(inter)
@@ -163,7 +167,7 @@ def interpolate_track(gvibe):
 
     # make sure the interpolation was fine => looking at a whole frame_ids
 
-    assert (saveall["frame_ids"] == np.arange(gvibe["frame_ids"].min(), gvibe["frame_ids"].max()+1)).all()
+    assert (saveall["frame_ids"] == np.arange(gvibe["frame_ids"].min(), gvibe["frame_ids"].max() + 1)).all()
 
     return saveall
 
@@ -172,14 +176,14 @@ if __name__ == "__main__":
     datapath = "datasets/uestc/"
     allpath = os.path.join(datapath, "vibe_cache_all_tracks.pkl")
     oldpath = os.path.join(datapath, "vibe_cache.pkl")
-    videopath = os.path.join(datapath, 'info', 'names.txt')
+    videopath = os.path.join(datapath, "info", "names.txt")
 
     kinectpath = os.path.join(datapath, "mat_from_skeleton.tar")
 
     allvibe = pkl.load(open(allpath, "rb"))
     oldvibe = pkl.load(open(oldpath, "rb"))
 
-    videos = open(videopath, 'r').read().splitlines()
+    videos = open(videopath, "r").read().splitlines()
 
     tar = tarfile.open(kinectpath, "r")
 

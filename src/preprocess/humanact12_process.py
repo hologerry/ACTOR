@@ -1,7 +1,9 @@
 import os
-import numpy as np
 import pickle as pkl
-from phspdtools import CameraParams
+
+import numpy as np
+
+from .phspdtools import CameraParams
 
 
 def splitname(name):
@@ -49,7 +51,7 @@ humanact12_coarse_action_enumerator = {
 }
 
 
-humanact12_coarse_action_to_label = {x: x-1 for x in range(1, 13)}
+humanact12_coarse_action_to_label = {x: x - 1 for x in range(1, 13)}
 
 
 def process_datata(savepath, posesfolder="data/PHPSDposes", datapath="data/HumanAct12", campath="data/phspdCameras"):
@@ -78,7 +80,7 @@ def process_datata(savepath, posesfolder="data/PHPSDposes", datapath="data/Human
         goodframes = []
         with open(posepath) as f:
             for line in f.readlines():
-                tmp = line.split(' ')
+                tmp = line.split(" ")
                 frame_idx = int(tmp[0])
                 if frame_idx >= frame1 and frame_idx <= frame2:
                     goodframes.append(frame_idx)
@@ -92,7 +94,7 @@ def process_datata(savepath, posesfolder="data/PHPSDposes", datapath="data/Human
         smplposes = []
         with open(smplposepath) as f:
             for line in f.readlines():
-                tmp = line.split(' ')
+                tmp = line.split(" ")
                 frame_idx = int(tmp[0])
                 if frame_idx in goodframes:
                     # pose = np.asarray([float(i) for i in tmp[1:]]).reshape([-1, 3])

@@ -1,6 +1,7 @@
+import random
+
 import numpy as np
 import torch
-import random
 
 
 def fixseed(seed):
@@ -11,7 +12,7 @@ def fixseed(seed):
 
 SEED = 10
 EVALSEED = 0
-# Provoc warning: not fully functionnal yet
+# Provoc warning: not fully functional yet
 # torch.set_deterministic(True)
 torch.backends.cudnn.benchmark = False
 

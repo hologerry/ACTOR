@@ -64,7 +64,7 @@ def hessian_penalty(G, batch, k=2, epsilon=0.1, reduction=torch.max, return_sepa
     return loss
 
 
-def rademacher(shape, device='cpu'):
+def rademacher(shape, device="cpu"):
     """Creates a random tensor of size [shape] under the Rademacher distribution (P(x=1) == P(x=-1) == 0.5)"""
     x = torch.empty(shape, device=device)
     x.random_(0, 2)  # Creates random tensor of 0s and 1s
@@ -83,7 +83,7 @@ def multi_layer_second_directional_derivative(G, batch, dz, G_z, epsilon, **G_kw
     G_from_x = listify(G_from_x)
     G_z = listify(G_z)
 
-    eps_sqr = epsilon ** 2
+    eps_sqr = epsilon**2
     sdd = [(G2x - 2 * G_z_base + Gfx) / eps_sqr for G2x, G_z_base, Gfx in zip(G_to_x, G_z, G_from_x)]
     return sdd
 
@@ -122,17 +122,22 @@ def _test_hessian_penalty():
     batch_size = 10
     nz = 2
     z = torch.randn(batch_size, nz)
-    def reduction(x): return x.abs().mean()
-    def G(z): return [z[:, 0] * z[:, 1], (z[:, 0] ** 2) * z[:, 1]]
+
+    def reduction(x):
+        return x.abs().mean()
+
+    def G(z):
+        return [z[:, 0] * z[:, 1], (z[:, 0] ** 2) * z[:, 1]]
+
     ground_truth = [4, reduction(16 * z[:, 0] ** 2).item()]
     # In this simple example, we use k=100 to reduce variance, but when applied to neural networks
     # you will probably want to use a small k (e.g., k=2) due to memory considerations.
     predicted = hessian_penalty(G, z, G_z=None, k=100, reduction=reduction, return_separately=True)
     predicted = [p.item() for p in predicted]
-    print('Ground Truth: %s' % ground_truth)
-    print('Approximation: %s' % predicted)  # This should be close to ground_truth, but not exactly correct
-    print('Difference: %s' % [str(100 * abs(p - gt) / gt) + '%' for p, gt in zip(predicted, ground_truth)])
+    print("Ground Truth: %s" % ground_truth)
+    print("Approximation: %s" % predicted)  # This should be close to ground_truth, but not exactly correct
+    print("Difference: %s" % [str(100 * abs(p - gt) / gt) + "%" for p, gt in zip(predicted, ground_truth)])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _test_hessian_penalty()

@@ -1,21 +1,21 @@
-import torch
 import numpy as np
+import torch
 
-from ..action2motion.diversity import calculate_diversity_multimodality
-from .acceleration import calculate_acceletation
+from src.evaluate.action2motion.diversity import calculate_diversity_multimodality
+from src.evaluate.othermetrics.acceleration import calculate_acceletation
 
 
 class OtherMetricsEvaluation:
-    """ Evaluation of some metrics in output space (not feature space):
+    """Evaluation of some metrics in output space (not feature space):
     - Acceleration metrics
     - Reconstruction loss
     - Diversity
     - Multimodality
-    (Not used in the paper)
-"""
+    (Not used in the paper)"""
+
     def __init__(self, device):
         self.device = device
-        
+
     def compute_features(self, model, motionloader, xyz=True):
         feat = "output_xyz" if xyz else "output"
         activations = []
@@ -41,30 +41,30 @@ class OtherMetricsEvaluation:
             motion_out = batch[outfeat].permute(0, 3, 1, 2)
             mask = batch["mask"]
 
-            square_diff = (motion_in[mask] - motion_out[mask])**2
+            square_diff = (motion_in[mask] - motion_out[mask]) ** 2
             sum_loss += square_diff.sum().item()
             num_loss += np.prod(square_diff.shape)
 
         rcloss = sum_loss / num_loss
 
         return rcloss
-    
+
     def evaluate(self, model, num_classes, loaders, xyz=True):
         # get the xyz as well
         model.outputxyz = True
         metrics = {}
         repname = "xyz" if xyz else "pose"
-        
+
         def print_logs(metric, key):
             print(f"Computing {metric} on the {key} loader ({repname})...")
-            
+
         for key, loader in loaders.items():
             # acceleration
             metric = "acceleration"
             print_logs(metric, key)
             mkey = f"{metric}_{key}"
             metrics[mkey] = calculate_acceletation(loader, device=self.device, xyz=xyz)
-            
+
             # features for diversity
             print_logs("features", key)
             feats, labels = self.compute_features(model, loader, xyz=xyz)

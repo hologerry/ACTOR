@@ -1,4 +1,4 @@
-echo -e "The pretrained models will stored in the 'pretrained_models' folder\n"
+echo -e "The pretrained models will stored in the 'pretrained_models' folder"
 gdown "https://drive.google.com/uc?id=1I_Fx48HzxizF7AA5etLrDr0yNViaI_8o"
 tar xfzv pretrained_models.tgz
 

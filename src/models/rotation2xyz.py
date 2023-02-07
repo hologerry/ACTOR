@@ -1,8 +1,9 @@
 import torch
+
 import src.utils.rotation_conversions as geometry
 
-from .smpl import SMPL, JOINTSTYPE_ROOT
 from .get_model import JOINTSTYPES
+from .smpl import JOINTSTYPE_ROOT, SMPL
 
 
 class Rotation2xyz:
@@ -10,9 +11,9 @@ class Rotation2xyz:
         self.device = device
         self.smpl_model = SMPL().eval().to(device)
 
-    def __call__(self, x, mask, pose_rep, translation, glob,
-                 jointstype, vertstrans, betas=None, beta=0,
-                 glob_rot=None, **kwargs):
+    def __call__(
+        self, x, mask, pose_rep, translation, glob, jointstype, vertstrans, betas=None, beta=0, glob_rot=None, **kwargs
+    ):
         if pose_rep == "xyz":
             return x
 
@@ -55,8 +56,9 @@ class Rotation2xyz:
             rotations = rotations[:, 1:]
 
         if betas is None:
-            betas = torch.zeros([rotations.shape[0], self.smpl_model.num_betas],
-                                dtype=rotations.dtype, device=rotations.device)
+            betas = torch.zeros(
+                [rotations.shape[0], self.smpl_model.num_betas], dtype=rotations.dtype, device=rotations.device
+            )
             betas[:, 1] = beta
             # import ipdb; ipdb.set_trace()
         out = self.smpl_model(body_pose=rotations, global_orient=global_orient, betas=betas)

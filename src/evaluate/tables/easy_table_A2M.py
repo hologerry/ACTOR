@@ -1,15 +1,16 @@
-import os
 import glob
 import math
+import os
+
 import numpy as np
 
-from ..tools import load_metrics
+from src.evaluate.tools import load_metrics
 
 
 def valformat(val, power=3):
     p = float(pow(10, power))
     # "{:<04}".format(np.round(p*val).astype(int)/p)
-    return str(np.round(p*val).astype(int)/p).ljust(4, "0")
+    return str(np.round(p * val).astype(int) / p).ljust(4, "0")
 
 
 def construct_table(folder, evaluation):
@@ -30,8 +31,8 @@ def construct_table(folder, evaluation):
             values = np.array([float(x) for x in a2m[ckey]])
             mean = np.mean(values)
             if key == "accuracy":
-                mean = 100*mean
-                values = 100*values
+                mean = 100 * mean
+                values = 100 * values
                 smean = valformat(mean, 1)
             else:
                 smean = valformat(mean, 2)
@@ -44,7 +45,9 @@ def construct_table(folder, evaluation):
 
     test = "\n".join(rows)
     print(test)
-    import ipdb; ipdb.set_trace()
+    import ipdb
+
+    ipdb.set_trace()
     bodylist.append(r"\bottomrule")
     body = "\n".join(bodylist)
     ncols = 5
@@ -62,12 +65,17 @@ def construct_table(folder, evaluation):
 {body}
 \end{{tabular}}
 \end{{document}}
-""".format(ncolsl="l"+"c"*(ncols-1), ncols=ncols,
-           pose_rep=pose_rep, title=title, firstrow=firstrow,
-           nbcolsxyz=len(METRICS["joints"]),
-           nbcolspose=len(METRICS[pose_rep]),
-           nbcolsa2m=len(METRICS["action2motion"]),
-           body=body)
+""".format(
+        ncolsl="l" + "c" * (ncols - 1),
+        ncols=ncols,
+        pose_rep=pose_rep,
+        title=title,
+        firstrow=firstrow,
+        nbcolsxyz=len(METRICS["joints"]),
+        nbcolspose=len(METRICS[pose_rep]),
+        nbcolsa2m=len(METRICS["action2motion"]),
+        body=body,
+    )
     return template
 
 
@@ -81,12 +89,12 @@ if __name__ == "__main__":
 
     opt = parse_opts()
     evalpath = opt.evalpath
-    
+
     folder, evaluation = os.path.split(evalpath)
     tex = construct_table(folder, evaluation)
     texpath = os.path.join(folder, os.path.splitext(evaluation)[0] + ".tex")
 
     with open(texpath, "w") as ftex:
         ftex.write(tex)
-        
+
     print(f"Table saved at {texpath}")

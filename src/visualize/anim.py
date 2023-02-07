@@ -1,9 +1,11 @@
+import imageio
 import numpy as np
 import torch
-import imageio
+
 
 # from action2motion
-# Define a kinematic tree for the skeletal struture
+# Define a kinematic tree for the skeletal structure
+# fmt: off
 humanact12_kinematic_chain = [[0, 1, 4, 7, 10],
                               [0, 2, 5, 8, 11],
                               [0, 3, 6, 9, 12, 15],
@@ -25,6 +27,7 @@ vibe_kinematic_chain = [[0, 12, 13, 14, 15],
                         [1, 2, 3, 4]]
 
 action2motion_kinematic_chain = vibe_kinematic_chain
+# fmt: on
 
 
 def add_shadow(img, shadow=15):
@@ -52,15 +55,17 @@ def load_anim(path, timesize=None):
 def plot_3d_motion(motion, length, save_path, params, title="", interval=50):
     import matplotlib
     import matplotlib.pyplot as plt
+
+    from matplotlib.animation import FuncAnimation, writers  # noqa: F401
     from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
     from mpl_toolkits.mplot3d.art3d import Poly3DCollection  # noqa: F401
-    from matplotlib.animation import FuncAnimation, writers  # noqa: F401
+
     # import mpl_toolkits.mplot3d.axes3d as p3
-    matplotlib.use('Agg')
+    matplotlib.use("Agg")
     pose_rep = params["pose_rep"]
 
     fig = plt.figure(figsize=[2.6, 2.8])
-    ax = fig.add_subplot(111, projection='3d')
+    ax = fig.add_subplot(111, projection="3d")
     # ax = p3.Axes3D(fig)
     # ax = fig.gca(projection='3d')
 
@@ -75,11 +80,11 @@ def plot_3d_motion(motion, length, save_path, params, title="", interval=50):
 
         ax.view_init(azim=-90, elev=110)
         # ax.set_axis_off()
-        ax.xaxis._axinfo["grid"]['color'] = (0.5, 0.5, 0.5, 0.25)
-        ax.yaxis._axinfo["grid"]['color'] = (0.5, 0.5, 0.5, 0.25)
-        ax.zaxis._axinfo["grid"]['color'] = (0.5, 0.5, 0.5, 0.25)
+        ax.xaxis._axinfo["grid"]["color"] = (0.5, 0.5, 0.5, 0.25)
+        ax.yaxis._axinfo["grid"]["color"] = (0.5, 0.5, 0.5, 0.25)
+        ax.zaxis._axinfo["grid"]["color"] = (0.5, 0.5, 0.5, 0.25)
 
-    colors = ['red', 'magenta', 'black', 'green', 'blue']
+    colors = ["red", "magenta", "black", "green", "blue"]
 
     if pose_rep != "xyz":
         raise ValueError("It should already be xyz.")
@@ -112,14 +117,16 @@ def plot_3d_motion(motion, length, save_path, params, title="", interval=50):
         ax.collections = []
         if kinematic_tree is not None:
             for chain, color in zip(kinematic_tree, colors):
-                ax.plot(motion[chain, 0, index],
-                        motion[chain, 1, index],
-                        motion[chain, 2, index], linewidth=4.0, color=color)
+                ax.plot(
+                    motion[chain, 0, index],
+                    motion[chain, 1, index],
+                    motion[chain, 2, index],
+                    linewidth=4.0,
+                    color=color,
+                )
         else:
-            ax.scatter(motion[1:, 0, index], motion[1:, 1, index],
-                       motion[1:, 2, index], c="red")
-            ax.scatter(motion[:1, 0, index], motion[:1, 1, index],
-                       motion[:1, 2, index], c="blue")
+            ax.scatter(motion[1:, 0, index], motion[1:, 1, index], motion[1:, 2, index], c="red")
+            ax.scatter(motion[:1, 0, index], motion[:1, 1, index], motion[:1, 2, index], c="blue")
 
     ax.set_title(title)
 
@@ -127,7 +134,7 @@ def plot_3d_motion(motion, length, save_path, params, title="", interval=50):
 
     plt.tight_layout()
     # pillow have problem droping frames
-    ani.save(save_path, writer='ffmpeg', fps=1000/interval)
+    ani.save(save_path, writer="ffmpeg", fps=1000 / interval)
     plt.close()
 
 

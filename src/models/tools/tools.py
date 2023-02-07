@@ -1,4 +1,5 @@
 import torch.nn as nn
+
 from torch.nn.modules.module import ModuleAttributeError
 
 
@@ -12,7 +13,7 @@ class AutoParams(nn.Module):
                     raise ValueError(f"{param} is needed.")
         except ModuleAttributeError:
             pass
-            
+
         try:
             for param, default in self.optional_params.items():
                 if param in kargs and kargs[param] is not None:

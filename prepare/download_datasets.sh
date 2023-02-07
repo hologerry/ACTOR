@@ -1,7 +1,7 @@
 mkdir -p data/
 cd data/
 
-echo "The datasets will be stored in the 'data' folder\n"
+echo "The datasets will be stored in the 'data' folder"
 
 # HumanAct12 poses
 echo "Downloading the HumanAct12 poses dataset"

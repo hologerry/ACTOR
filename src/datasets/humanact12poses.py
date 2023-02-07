@@ -1,19 +1,21 @@
-import pickle as pkl
-import numpy as np
 import os
-from .dataset import Dataset
+import pickle as pkl
+
+import numpy as np
+
+from src.datasets.dataset import Dataset
 
 
 class HumanAct12Poses(Dataset):
     dataname = "humanact12"
 
-    def __init__(self, datapath="data/HumanAct12Poses", **kargs):
+    def __init__(self, datapath="data/HumanAct12Poses", **kwargs):
         self.datapath = datapath
 
-        super().__init__(**kargs)
+        super().__init__(**kwargs)
 
-        pkldatafilepath = os.path.join(datapath, "humanact12poses.pkl")
-        data = pkl.load(open(pkldatafilepath, "rb"))
+        pkl_data_filepath = os.path.join(datapath, "humanact12poses.pkl")
+        data = pkl.load(open(pkl_data_filepath, "rb"))
 
         self._pose = [x for x in data["poses"]]
         self._num_frames_in_video = [p.shape[0] for p in self._pose]
@@ -34,7 +36,7 @@ class HumanAct12Poses(Dataset):
         self._action_classes = humanact12_coarse_action_enumerator
 
     def _load_joints3D(self, ind, frame_ix):
-        return self._joints[ind][frame_ix]
+        return self._joints[ind][frame_ix]  # (24, 3)
 
     def _load_rotvec(self, ind, frame_ix):
         pose = self._pose[ind][frame_ix].reshape(-1, 24, 3)

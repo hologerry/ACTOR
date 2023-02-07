@@ -1,4 +1,5 @@
 import torch
+
 from tqdm import tqdm
 
 
@@ -27,7 +28,7 @@ def train_or_test(model, optimizer, iterator, device, mode="train"):
             # forward pass
             batch = model(batch)
             mixed_loss, losses = model.compute_loss(batch)
-            
+
             for key in dict_loss.keys():
                 dict_loss[key] += losses[key]
 

@@ -1,12 +1,10 @@
-from .transformer import Encoder_TRANSFORMER as Encoder_AUTOTRANS  # noqa
-
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
 
-from .tools.transformer_layers import PositionalEncoding
-from .tools.transformer_layers import TransformerDecoderLayer
+from .tools.transformer_layers import PositionalEncoding, TransformerDecoderLayer
+from .transformer import Encoder_TRANSFORMER as Encoder_AUTOTRANS
 
 
 # taken from joeynmt repo
@@ -18,13 +16,13 @@ def subsequent_mask(size: int):
     :param size: size of mask (2nd and 3rd dim)
     :return: Tensor with 0s and 1s of shape (1, size, size)
     """
-    mask = np.triu(np.ones((1, size, size)), k=1).astype('uint8')
+    mask = np.triu(np.ones((1, size, size)), k=1).astype("uint8")
     return torch.from_numpy(mask) == 0
 
 
 def augment_x(x, y, mask, lengths, num_classes, concatenate_time):
     bs, nframes, njoints, nfeats = x.size()
-    x = x.reshape(bs, nframes, njoints*nfeats)
+    x = x.reshape(bs, nframes, njoints * nfeats)
     if len(y.shape) == 1:  # can give on hot encoded as input
         y = F.one_hot(y, num_classes)
     y = y.to(dtype=x.dtype)
@@ -32,7 +30,7 @@ def augment_x(x, y, mask, lengths, num_classes, concatenate_time):
 
     if concatenate_time:
         # Time embedding
-        time = mask * 1/(lengths[..., None]-1)
+        time = mask * 1 / (lengths[..., None] - 1)
         time = (time[:, None] * torch.arange(time.shape[1], device=x.device)[None, :])[:, 0]
         time = time[..., None]
         x_augmented = torch.cat((x, y, time), 2)
@@ -50,17 +48,36 @@ def augment_z(z, y, mask, lengths, num_classes, concatenate_time):
 
     # Time embedding
     if concatenate_time:
-        time = mask * 1/(lengths[..., None]-1)
+        time = mask * 1 / (lengths[..., None] - 1)
         time = (time[:, None] * torch.arange(time.shape[1], device=z.device)[None, :])[:, 0]
         z_augmented = torch.cat((z_augmented, time[..., None]), 2)
-        
+
     return z_augmented
 
 
 class Decoder_AUTOTRANS(nn.Module):
-    def __init__(self, modeltype, njoints, nfeats, num_frames, num_classes, translation, pose_rep, glob, glob_rot,
-                 concatenate_time=True, positional_encoding=True, latent_dim=256, ff_size=1024, num_layers=4, num_heads=4,
-                 dropout=0.1, emb_dropout=0.1, teacher_forcing=True, **kargs):
+    def __init__(
+        self,
+        modeltype,
+        njoints,
+        nfeats,
+        num_frames,
+        num_classes,
+        translation,
+        pose_rep,
+        glob,
+        glob_rot,
+        concatenate_time=True,
+        positional_encoding=True,
+        latent_dim=256,
+        ff_size=1024,
+        num_layers=4,
+        num_heads=4,
+        dropout=0.1,
+        emb_dropout=0.1,
+        teacher_forcing=True,
+        **kargs
+    ):
         super().__init__()
 
         self.modeltype = modeltype
@@ -68,7 +85,7 @@ class Decoder_AUTOTRANS(nn.Module):
         self.nfeats = nfeats
         self.num_frames = num_frames
         self.num_classes = num_classes
-        
+
         self.pose_rep = pose_rep
         self.glob = glob
         self.glob_rot = glob_rot
@@ -84,49 +101,52 @@ class Decoder_AUTOTRANS(nn.Module):
         self.dropout = dropout
         self.emb_dropout = emb_dropout
         self.teacher_forcing = teacher_forcing
-        
+
         self.input_feats = self.latent_dim + self.num_classes
-        self.input_feats_x = self.njoints*self.nfeats + self.num_classes
+        self.input_feats_x = self.njoints * self.nfeats + self.num_classes
         if self.concatenate_time:
             self.input_feats += 1
             self.input_feats_x += 1
 
         self.embedding = nn.Linear(self.input_feats, self.latent_dim)
         self.embedding_x = nn.Linear(self.input_feats_x, self.latent_dim)
-            
-        self.output_feats = self.njoints*self.nfeats
-        
+
+        self.output_feats = self.njoints * self.nfeats
+
         # create num_layers decoder layers and put them in a list
-        self.layers = nn.ModuleList([TransformerDecoderLayer(size=self.latent_dim,
-                                                             ff_size=self.ff_size,
-                                                             num_heads=self.num_heads,
-                                                             dropout=self.dropout)
-                                     for _ in range(self.num_layers)])
+        self.layers = nn.ModuleList(
+            [
+                TransformerDecoderLayer(
+                    size=self.latent_dim, ff_size=self.ff_size, num_heads=self.num_heads, dropout=self.dropout
+                )
+                for _ in range(self.num_layers)
+            ]
+        )
 
         self.pe = PositionalEncoding(self.latent_dim)
         self.layer_norm = nn.LayerNorm(self.latent_dim, eps=1e-6)
 
         self.emb_dropout = nn.Dropout(p=self.emb_dropout)
         self.output_layer = nn.Linear(self.latent_dim, self.output_feats, bias=False)
-        
+
     def forward(self, batch):
         z, y, mask = batch["z"], batch["y"], batch["mask"]
         lengths = mask.sum(1)
-        
+
         lenseqmax = mask.shape[1]
         bs, njoints, nfeats = len(z), self.njoints, self.nfeats
-        
+
         z_augmented = augment_z(z, y, mask, lengths, self.num_classes, self.concatenate_time)
         src = self.embedding(z_augmented)
-        
+
         src_mask = mask.unsqueeze(1)
-        
+
         # Check if using teacher forcing or not
         # if it is allowed and possible
         teacher_forcing = self.teacher_forcing and "x" in batch
         # in eval mode, by default it it not unless it is "forced"
         teacher_forcing = teacher_forcing and (self.training or batch.get("teacher_force", False))
-            
+
         if teacher_forcing:
             x = batch["x"].permute((0, 3, 1, 2))
             # shift the input
@@ -134,9 +154,9 @@ class Decoder_AUTOTRANS(nn.Module):
             # Embedding of the input
             x_augmented = augment_x(x, y, mask, lengths, self.num_classes, self.concatenate_time)
             trg = self.embedding_x(x_augmented)
-            trg_mask = (mask[:, None] * subsequent_mask(lenseqmax).type_as(mask))
+            trg_mask = mask[:, None] * subsequent_mask(lenseqmax).type_as(mask)
             # shape: torch.Size([48, 183, 183])
-            
+
             if self.positional_encoding:
                 trg = self.pe(trg)
             trg = self.emb_dropout(trg)
@@ -144,13 +164,13 @@ class Decoder_AUTOTRANS(nn.Module):
             val = trg
             for layer in self.layers:
                 val = layer(val, src, src_mask=src_mask, trg_mask=trg_mask)
-                
+
             val = self.layer_norm(val)
             val = self.output_layer(val)
 
             # pad the output
             val[~mask] = 0
-            
+
             val = val.reshape((bs, lenseqmax, njoints, nfeats))
             batch["output"] = val.permute(0, 2, 3, 1)
         else:
@@ -158,11 +178,10 @@ class Decoder_AUTOTRANS(nn.Module):
             x = torch.Tensor.new_zeros(z, (bs, 1, njoints, nfeats))
             for index in range(lenseqmax):
                 # change it to speed up
-                current_mask = mask[:, :index+1]
-                x_augmented = augment_x(x, y, current_mask, lengths,
-                                        self.num_classes, self.concatenate_time)
+                current_mask = mask[:, : index + 1]
+                x_augmented = augment_x(x, y, current_mask, lengths, self.num_classes, self.concatenate_time)
                 trg = self.embedding_x(x_augmented)
-                trg_mask = (current_mask[:, None] * subsequent_mask(index+1).type_as(mask))
+                trg_mask = current_mask[:, None] * subsequent_mask(index + 1).type_as(mask)
 
                 if self.positional_encoding:
                     trg = self.pe(trg)
@@ -177,7 +196,7 @@ class Decoder_AUTOTRANS(nn.Module):
 
                 # pad the output
                 val[~current_mask] = 0
-                val = val.reshape((bs, index+1, njoints, nfeats))
+                val = val.reshape((bs, index + 1, njoints, nfeats))
 
                 # extract the last output
                 last_out = val[:, -1]

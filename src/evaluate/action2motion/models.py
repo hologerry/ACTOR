@@ -20,7 +20,7 @@ class MotionDiscriminator(nn.Module):
     def forward(self, motion_sequence, lengths=None, hidden_unit=None):
         # dim (motion_length, num_samples, hidden_size)
         bs, njoints, nfeats, num_frames = motion_sequence.shape
-        motion_sequence = motion_sequence.reshape(bs, njoints*nfeats, num_frames)
+        motion_sequence = motion_sequence.reshape(bs, njoints * nfeats, num_frames)
         motion_sequence = motion_sequence.permute(2, 0, 1)
         if hidden_unit is None:
             # motion_sequence = motion_sequence.permute(1, 0, 2)
@@ -28,7 +28,7 @@ class MotionDiscriminator(nn.Module):
         gru_o, _ = self.recurrent(motion_sequence.float(), hidden_unit)
 
         # select the last valid, instead of: gru_o[-1, :, :]
-        out = gru_o[tuple(torch.stack((lengths-1, torch.arange(bs, device=self.device))))]
+        out = gru_o[tuple(torch.stack((lengths - 1, torch.arange(bs, device=self.device))))]
 
         # dim (num_samples, 30)
         lin1 = self.linear1(out)
@@ -45,7 +45,7 @@ class MotionDiscriminatorForFID(MotionDiscriminator):
     def forward(self, motion_sequence, lengths=None, hidden_unit=None):
         # dim (motion_length, num_samples, hidden_size)
         bs, njoints, nfeats, num_frames = motion_sequence.shape
-        motion_sequence = motion_sequence.reshape(bs, njoints*nfeats, num_frames)
+        motion_sequence = motion_sequence.reshape(bs, njoints * nfeats, num_frames)
         motion_sequence = motion_sequence.permute(2, 0, 1)
         if hidden_unit is None:
             # motion_sequence = motion_sequence.permute(1, 0, 2)
@@ -53,7 +53,7 @@ class MotionDiscriminatorForFID(MotionDiscriminator):
         gru_o, _ = self.recurrent(motion_sequence.float(), hidden_unit)
 
         # select the last valid, instead of: gru_o[-1, :, :]
-        out = gru_o[tuple(torch.stack((lengths-1, torch.arange(bs, device=self.device))))]
+        out = gru_o[tuple(torch.stack((lengths - 1, torch.arange(bs, device=self.device))))]
 
         # dim (num_samples, 30)
         lin1 = self.linear1(out)
@@ -84,21 +84,25 @@ def load_classifier_for_fid(dataset_type, input_size_raw, num_classes, device):
 
 
 def test():
+    import src.utils.fixseed
+
     from src.datasets.ntu13 import NTU13
-    import src.utils.fixseed  # noqa
 
     classifier = load_classifier("ntu13", input_size_raw=54, num_classes=13, device="cuda").eval()
-    params = {"pose_rep": "rot6d",
-              "translation": True,
-              "glob": True,
-              "jointstype": "a2m",
-              "vertstrans": True,
-              "num_frames": 60,
-              "sampling": "conseq",
-              "sampling_step": 1}
+    params = {
+        "pose_rep": "rot6d",
+        "translation": True,
+        "glob": True,
+        "jointstype": "a2m",
+        "vertstrans": True,
+        "num_frames": 60,
+        "sampling": "conseq",
+        "sampling_step": 1,
+    }
     dataset = NTU13(**params)
 
     from src.models.rotation2xyz import Rotation2xyz
+
     rot2xyz = Rotation2xyz(device="cuda")
     confusion_xyz = torch.zeros(13, 13, dtype=torch.long)
     confusion = torch.zeros(13, 13, dtype=torch.long)
@@ -123,8 +127,8 @@ def test():
         confusion_xyz[gt_cls][predicted_cls_xyz] += 1
         confusion[gt_cls][predicted_cls] += 1
 
-    accuracy_xyz = torch.trace(confusion_xyz)/torch.sum(confusion_xyz).item()
-    accuracy = torch.trace(confusion)/torch.sum(confusion).item()
+    accuracy_xyz = torch.trace(confusion_xyz) / torch.sum(confusion_xyz).item()
+    accuracy = torch.trace(confusion) / torch.sum(confusion).item()
 
     print(f"accuracy: {accuracy:.1%}, accuracy_xyz: {accuracy_xyz:.1%}")
 

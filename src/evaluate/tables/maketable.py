@@ -1,22 +1,20 @@
-import os
 import glob
 import math
+import os
 
-from .tools import load_metrics
+from src.evaluate.tools import load_metrics
 
-METRICS = {"joints": ["acceleration", "rc", "diversity", "multimodality"],
-           "action2motion": ["accuracy", "fid", "diversity", "multimodality"]}
+
+METRICS = {
+    "joints": ["acceleration", "rc", "diversity", "multimodality"],
+    "action2motion": ["accuracy", "fid", "diversity", "multimodality"],
+}
 
 UP = r"$\uparrow$"
 DOWN = r"$\downarrow$"
 RIGHT = r"$\rightarrow$"
 
-ARROWS = {"accuracy": UP,
-          "acceleration": RIGHT,
-          "rc": DOWN,
-          "fid": DOWN,
-          "diversity": RIGHT,
-          "multimodality": RIGHT}
+ARROWS = {"accuracy": UP, "acceleration": RIGHT, "rc": DOWN, "fid": DOWN, "diversity": RIGHT, "multimodality": RIGHT}
 
 POSE_ORDER = ["xyz", "rotvec", "rotquat", "rotmat", "rot6d"]
 for pose in POSE_ORDER:
@@ -42,18 +40,18 @@ def colorize_bold_template(string, color):
 
 def format_table(val, gtval, mname):
     value = float(val)
-    
+
     try:
         exp = math.floor(math.log10(value))
     except ValueError:
         exp = 0
         value = 0
-    
+
     if mname == "rc":
         formatter = "{:.1e}"
         if value >= 1:
             formatter = colorize_bold_template(formatter, RED)
-            
+
     elif mname in ["diversity", "multimodality"]:
         if exp < -1:
             formatter = "{:.1e}"
@@ -61,29 +59,29 @@ def format_table(val, gtval, mname):
             formatter = "{:.3g}"
         if gtval is not None:
             gtval = float(gtval)
-            if value > 0.8*gtval:
+            if value > 0.8 * gtval:
                 formatter = colorize_bold_template(formatter, GREEN)
-            elif value < 0.3*gtval:
+            elif value < 0.3 * gtval:
                 formatter = colorize_bold_template(formatter, RED)
-                    
+
     elif mname == "accuracy":
         formatter = "{:.1%}"
         if value > 0.65:
             formatter = colorize_bold_template(formatter, GREEN)
         elif value < 0.35:
             formatter = colorize_bold_template(formatter, RED)
-        
+
     elif mname == "acceleration":
         formatter = "{:.1e}"
         if gtval is not None:
             gtval = float(gtval)
-            diff = math.log10(value/gtval)
+            diff = math.log10(value / gtval)
             # below acceleration
             if diff < 0.05:
                 formatter = colorize_bold_template(formatter, GREEN)
             elif diff > 0.3:
                 formatter = colorize_bold_template(formatter, RED)
-                
+
     else:
         formatter = "{:.2f}"
 
@@ -122,7 +120,7 @@ def collect_tables(folder, expname, lastepoch=False, norecons=False):
         modelname = fname.split("cvae_")[1].split("_rc")[0]
         kl_loss = float(fname.split("_kl_")[2].split("_")[0])
         epoch = os.path.split(path)[1].split("evaluation_metrics_")[1].split(".")[0]
-            
+
         if lastepoch:
             if modelname not in models_epochs:
                 models_epochs[modelname] = epoch
@@ -154,14 +152,14 @@ def collect_tables(folder, expname, lastepoch=False, norecons=False):
             modelname += rf"\_{ablation}"
         except IndexError:
             modelname += r"\_noablation"
-        
+
         if modelname not in models_kl:
             models_kl[modelname] = {}
         models_kl[modelname][kl_loss] = metrics
         allkls.add(kl_loss)
 
     lambdas_sorted = sorted(list(allkls), reverse=True)
-    
+
     gtrowl = ["ground truth"]
     for group in GROUPORDER:
         if group in metrics:
@@ -192,7 +190,7 @@ def collect_tables(folder, expname, lastepoch=False, norecons=False):
             firstrow.append("")
     firstrow.pop()
     firstrow = " & ".join(firstrow) + r"\\"
-       
+
     for lam in lambdas_sorted:
         for modelname in modelnames:
             if lam in models_kl[modelname]:
@@ -241,25 +239,30 @@ def collect_tables(folder, expname, lastepoch=False, norecons=False):
 {body}
 \end{{tabular}}
 \end{{document}}
-""".format(ncolsl="l"+"c"*(ncols-1), ncols=ncols,
-           pose_rep=pose_rep, title=title, firstrow=firstrow,
-           nbcolsxyz=len(METRICS["joints"]),
-           nbcolspose=len(METRICS[pose_rep]),
-           nbcolsa2m=len(METRICS["action2motion"]),
-           body=body)
+""".format(
+        ncolsl="l" + "c" * (ncols - 1),
+        ncols=ncols,
+        pose_rep=pose_rep,
+        title=title,
+        firstrow=firstrow,
+        nbcolsxyz=len(METRICS["joints"]),
+        nbcolspose=len(METRICS[pose_rep]),
+        nbcolsa2m=len(METRICS["action2motion"]),
+        body=body,
+    )
     return template
 
 
 if __name__ == "__main__":
     import argparse
-    
+
     def parse_opts():
         parser = argparse.ArgumentParser()
         parser.add_argument("exppath", help="name of the exp")
         parser.add_argument("--outpath", default="tex", help="name of the exp")
-        parser.add_argument("--norecons", dest='norecons', action='store_true')
+        parser.add_argument("--norecons", dest="norecons", action="store_true")
         parser.set_defaults(norecons=False)
-        parser.add_argument("--lastepoch", dest='lastepoch', action='store_true')
+        parser.add_argument("--lastepoch", dest="lastepoch", action="store_true")
         parser.set_defaults(lastepoch=False)
         return parser.parse_args()
 
@@ -267,13 +270,13 @@ if __name__ == "__main__":
     exppath = opt.exppath
     norecons = opt.norecons
     lastepoch = opt.lastepoch
-    
+
     folder, expname = os.path.split(exppath)
 
     template = collect_tables(folder, expname, lastepoch=lastepoch, norecons=norecons)
 
     # os.makedirs(opt.outpath, exist_ok=True)
-    
+
     name = expname
     if norecons:
         name += "_norecons"

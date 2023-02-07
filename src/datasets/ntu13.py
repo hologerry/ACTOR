@@ -1,12 +1,11 @@
+import codecs
+import codecs as cs
 import os
 
+import joblib
 import numpy as np
 
-import joblib
-import codecs as cs
-import codecs
-
-from .dataset import Dataset
+from src.datasets.dataset import Dataset
 
 
 # action2motion_joints = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 21, 24, 38]
@@ -20,15 +19,15 @@ class NTU13(Dataset):
     def __init__(self, datapath="data/ntu13", **kwargs):
         self.datapath = datapath
         super().__init__(**kwargs)
-        
+
         motion_desc_file = "ntu_vibe_list.txt"
-        
+
         keep_actions = [6, 7, 8, 9, 22, 23, 24, 38, 80, 93, 99, 100, 102]
         self.num_classes = len(keep_actions)
-                
+
         candi_list = []
         candi_list_desc_name = os.path.join(datapath, motion_desc_file)
-        with cs.open(candi_list_desc_name, 'r', 'utf-8') as f:
+        with cs.open(candi_list_desc_name, "r", "utf-8") as f:
             for line in f.readlines():
                 candi_list.append(line.strip())
 
@@ -36,7 +35,7 @@ class NTU13(Dataset):
         self._poses = []
         self._num_frames_in_video = []
         self._actions = []
-        
+
         for path in candi_list:
             data_org = joblib.load(os.path.join(datapath, path))
             try:
@@ -47,8 +46,8 @@ class NTU13(Dataset):
                 # initial pose at origin: on dataset.load()
             except KeyError:
                 continue
-            action_id = int(path[path.index('A') + 1:-4])
-            
+            action_id = int(path[path.index("A") + 1 : -4])
+
             self._poses.append(data_pose)
             self._joints3d.append(data_j3d)
             self._actions.append(action_id)
@@ -56,7 +55,7 @@ class NTU13(Dataset):
 
         self._actions = np.array(self._actions)
         self._num_frames_in_video = np.array(self._num_frames_in_video)
-        
+
         N = len(self._poses)
         # same set for training and testing
         self._train = np.arange(N)
@@ -70,7 +69,7 @@ class NTU13(Dataset):
     def _load_joints3D(self, ind, frame_ix):
         joints3D = self._joints3d[ind][frame_ix]
         return joints3D
-        
+
     def _load_rotvec(self, ind, frame_ix):
         pose = self._poses[ind][frame_ix, :].reshape(-1, 24, 3)
         return pose

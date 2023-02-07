@@ -1,7 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All rights reserved.
-# Check PYTORCH3D_LICENCE before use
+# Check PYTORCH3D_LICENSE before use
 
 import functools
+
 from typing import Optional
 
 import torch
@@ -86,7 +87,7 @@ def _copysign(a, b):
 def _sqrt_positive_part(x):
     """
     Returns torch.sqrt(torch.max(0, x))
-    but with a zero subgradient where x is 0.
+    but with a zero sub_gradient where x is 0.
     """
     ret = torch.zeros_like(x)
     positive_mask = x > 0
@@ -172,9 +173,7 @@ def euler_angles_to_matrix(euler_angles, convention: str):
     return functools.reduce(torch.matmul, matrices)
 
 
-def _angle_from_tan(
-    axis: str, other_axis: str, data, horizontal: bool, tait_bryan: bool
-):
+def _angle_from_tan(axis: str, other_axis: str, data, horizontal: bool, tait_bryan: bool):
     """
     Extract the first or third Euler angle from the two members of
     the matrix which are positive constant times its sine and cosine.
@@ -238,27 +237,19 @@ def matrix_to_euler_angles(matrix, convention: str):
     i2 = _index_from_letter(convention[2])
     tait_bryan = i0 != i2
     if tait_bryan:
-        central_angle = torch.asin(
-            matrix[..., i0, i2] * (-1.0 if i0 - i2 in [-1, 2] else 1.0)
-        )
+        central_angle = torch.asin(matrix[..., i0, i2] * (-1.0 if i0 - i2 in [-1, 2] else 1.0))
     else:
         central_angle = torch.acos(matrix[..., i0, i0])
 
     o = (
-        _angle_from_tan(
-            convention[0], convention[1], matrix[..., i2], False, tait_bryan
-        ),
+        _angle_from_tan(convention[0], convention[1], matrix[..., i2], False, tait_bryan),
         central_angle,
-        _angle_from_tan(
-            convention[2], convention[1], matrix[..., i0, :], True, tait_bryan
-        ),
+        _angle_from_tan(convention[2], convention[1], matrix[..., i0, :], True, tait_bryan),
     )
     return torch.stack(o, -1)
 
 
-def random_quaternions(
-    n: int, dtype: Optional[torch.dtype] = None, device=None, requires_grad=False
-):
+def random_quaternions(n: int, dtype: Optional[torch.dtype] = None, device=None, requires_grad=False):
     """
     Generate random quaternions representing rotations,
     i.e. versors with nonnegative real part.
@@ -280,9 +271,7 @@ def random_quaternions(
     return o
 
 
-def random_rotations(
-    n: int, dtype: Optional[torch.dtype] = None, device=None, requires_grad=False
-):
+def random_rotations(n: int, dtype: Optional[torch.dtype] = None, device=None, requires_grad=False):
     """
     Generate random rotations as 3x3 rotation matrices.
 
@@ -297,15 +286,11 @@ def random_rotations(
     Returns:
         Rotation matrices as tensor of shape (n, 3, 3).
     """
-    quaternions = random_quaternions(
-        n, dtype=dtype, device=device, requires_grad=requires_grad
-    )
+    quaternions = random_quaternions(n, dtype=dtype, device=device, requires_grad=requires_grad)
     return quaternion_to_matrix(quaternions)
 
 
-def random_rotation(
-    dtype: Optional[torch.dtype] = None, device=None, requires_grad=False
-):
+def random_rotation(dtype: Optional[torch.dtype] = None, device=None, requires_grad=False):
     """
     Generate a single random 3x3 rotation matrix.
 
@@ -361,7 +346,7 @@ def quaternion_raw_multiply(a, b):
 def quaternion_multiply(a, b):
     """
     Multiply two quaternions representing rotations, returning the quaternion
-    representing their composition, i.e. the versor with nonnegative real part.
+    representing their composition, i.e. the versor with nonnegative real part.
     Usual torch rules for broadcasting apply.
 
     Args:
@@ -464,17 +449,11 @@ def axis_angle_to_quaternion(axis_angle):
     eps = 1e-6
     small_angles = angles.abs() < eps
     sin_half_angles_over_angles = torch.empty_like(angles)
-    sin_half_angles_over_angles[~small_angles] = (
-        torch.sin(half_angles[~small_angles]) / angles[~small_angles]
-    )
+    sin_half_angles_over_angles[~small_angles] = torch.sin(half_angles[~small_angles]) / angles[~small_angles]
     # for x small, sin(x/2) is about x/2 - (x/2)^3/6
     # so sin(x/2)/x is about 1/2 - (x*x)/48
-    sin_half_angles_over_angles[small_angles] = (
-        0.5 - (angles[small_angles] * angles[small_angles]) / 48
-    )
-    quaternions = torch.cat(
-        [torch.cos(half_angles), axis_angle * sin_half_angles_over_angles], dim=-1
-    )
+    sin_half_angles_over_angles[small_angles] = 0.5 - (angles[small_angles] * angles[small_angles]) / 48
+    quaternions = torch.cat([torch.cos(half_angles), axis_angle * sin_half_angles_over_angles], dim=-1)
     return quaternions
 
 
@@ -498,21 +477,17 @@ def quaternion_to_axis_angle(quaternions):
     eps = 1e-6
     small_angles = angles.abs() < eps
     sin_half_angles_over_angles = torch.empty_like(angles)
-    sin_half_angles_over_angles[~small_angles] = (
-        torch.sin(half_angles[~small_angles]) / angles[~small_angles]
-    )
+    sin_half_angles_over_angles[~small_angles] = torch.sin(half_angles[~small_angles]) / angles[~small_angles]
     # for x small, sin(x/2) is about x/2 - (x/2)^3/6
     # so sin(x/2)/x is about 1/2 - (x*x)/48
-    sin_half_angles_over_angles[small_angles] = (
-        0.5 - (angles[small_angles] * angles[small_angles]) / 48
-    )
+    sin_half_angles_over_angles[small_angles] = 0.5 - (angles[small_angles] * angles[small_angles]) / 48
     return quaternions[..., 1:] / sin_half_angles_over_angles
 
 
 def rotation_6d_to_matrix(d6: torch.Tensor) -> torch.Tensor:
     """
     Converts 6D rotation representation by Zhou et al. [1] to rotation matrix
-    using Gram--Schmidt orthogonalisation per Section B of [1].
+    using Gram-Schmidt orthogonalization per Section B of [1].
     Args:
         d6: 6D rotation representation, of size (*, 6)
 

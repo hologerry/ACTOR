@@ -1,17 +1,19 @@
-import matplotlib.pyplot as plt
 # import torch
 import os
 
+import matplotlib.pyplot as plt
+
+import src.utils.fixseed
+
 from src.datasets.get_dataset import get_dataset
 from src.utils import optutils
-from src.utils.visualize import viz_dataset
-
-import src.utils.fixseed  # noqa
-
-plt.switch_backend('agg')
+from src.visualize import viz_dataset
 
 
-if __name__ == '__main__':
+plt.switch_backend("agg")
+
+
+if __name__ == "__main__":
     # parse options
     parameters = optutils.visualize_dataset_parser()
 

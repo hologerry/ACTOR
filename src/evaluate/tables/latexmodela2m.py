@@ -1,9 +1,10 @@
-import os
 import glob
 import math
+import os
+
 import numpy as np
 
-from .tools import load_metrics
+from src.evaluate.tools import load_metrics
 
 
 def get_gtname(mname):
@@ -28,14 +29,16 @@ def construct_table(folder, evaluation):
     a2m["fid_gt"] = a2m["fid_gt2"]
     modelname = os.path.split(folder)[1]
 
-    modelname = modelname.replace("_ntu13_vibe_rot6d_glob_translation_numlayers_8_numframes_60_sampling_conseq_samplingstep_1_kl_1e-05_gelu", "")
+    modelname = modelname.replace(
+        "_ntu13_vibe_rot6d_glob_translation_numlayers_8_numframes_60_sampling_conseq_samplingstep_1_kl_1e-05_gelu", ""
+    )
     modelname = modelname.replace("_", " ")
 
     def valformat(val, power=3):
         p = float(pow(10, power))
         # "{:<04}".format(np.round(p*val).astype(int)/p)
-        return str(np.round(p*val).astype(int)/p).ljust(5, "0")
-    
+        return str(np.round(p * val).astype(int) / p).ljust(5, "0")
+
     values = []
     rows = []
     for model in ["gt", "gen", "recons"]:
@@ -50,9 +53,9 @@ def construct_table(folder, evaluation):
             row.append(string)
         row = " & ".join(row) + r"\\"
         rows.append(row)
-        
+
     MODELS = "\n        ".join(rows)
-    
+
     template = r"""\documentclass{{standalone}}
 \usepackage{{booktabs}}
 \usepackage[dvipsnames]{{xcolor}}
@@ -68,7 +71,9 @@ def construct_table(folder, evaluation):
         \bottomrule
     \end{{tabular}}
 \end{{document}}
-""".format(MODELS=MODELS)
+""".format(
+        MODELS=MODELS
+    )
     return template
 
 
@@ -82,12 +87,12 @@ if __name__ == "__main__":
 
     opt = parse_opts()
     evalpath = opt.evalpath
-    
+
     folder, evaluation = os.path.split(evalpath)
     tex = construct_table(folder, evaluation)
     texpath = os.path.join(folder, os.path.splitext(evaluation)[0] + ".tex")
 
     with open(texpath, "w") as ftex:
         ftex.write(tex)
-        
+
     print(f"Table saved at {texpath}")

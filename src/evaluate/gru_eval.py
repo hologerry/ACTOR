@@ -1,19 +1,20 @@
-import torch
-from tqdm import tqdm
-
-from src.utils.fixseed import fixseed
-
-from src.evaluate.action2motion.evaluate import A2MEvaluation
-# from src.evaluate.othermetrics.evaluation import OtherMetricsEvaluation
-
-from torch.utils.data import DataLoader
-from src.utils.tensors import collate
-
 import os
 
-from .tools import save_metrics, format_metrics
-from src.models.get_model import get_model as get_gen_model
+import torch
+
+from torch.utils.data import DataLoader
+from tqdm import tqdm
+
 from src.datasets.get_dataset import get_datasets
+from src.evaluate.action2motion.evaluate import A2MEvaluation
+from src.models.get_model import get_model as get_gen_model
+from src.utils.fixseed import fixseed
+from src.utils.tensors import collate
+
+from .tools import format_metrics, save_metrics
+
+
+# from src.evaluate.othermetrics.evaluation import OtherMetricsEvaluation
 
 
 class NewDataloader:
@@ -29,17 +30,14 @@ class NewDataloader:
                     batch = {key: val.to(device) for key, val in batch.items()}
                 elif mode == "gt":
                     batch = {key: val.to(device) for key, val in databatch.items()}
-                    batch["x_xyz"] = model.rot2xyz(batch["x"].to(device),
-                                                   batch["mask"].to(device))
+                    batch["x_xyz"] = model.rot2xyz(batch["x"].to(device), batch["mask"].to(device))
                     batch["output"] = batch["x"]
                     batch["output_xyz"] = batch["x_xyz"]
                 elif mode == "rc":
                     databatch = {key: val.to(device) for key, val in databatch.items()}
                     batch = model(databatch)
-                    batch["output_xyz"] = model.rot2xyz(batch["output"],
-                                                        batch["mask"])
-                    batch["x_xyz"] = model.rot2xyz(batch["x"],
-                                                   batch["mask"])
+                    batch["output_xyz"] = model.rot2xyz(batch["output"], batch["mask"])
+                    batch["x_xyz"] = model.rot2xyz(batch["x"], batch["mask"])
 
                 self.batches.append(batch)
 
@@ -97,10 +95,12 @@ def evaluate(parameters, folder, checkpointname, epoch, niter):
             datasetGT2.reset_shuffle()
             datasetGT2.shuffle()
 
-            dataiterator = DataLoader(datasetGT1, batch_size=parameters["batch_size"],
-                                      shuffle=False, num_workers=8, collate_fn=collate)
-            dataiterator2 = DataLoader(datasetGT2, batch_size=parameters["batch_size"],
-                                       shuffle=False, num_workers=8, collate_fn=collate)
+            dataiterator = DataLoader(
+                datasetGT1, batch_size=parameters["batch_size"], shuffle=False, num_workers=8, collate_fn=collate
+            )
+            dataiterator2 = DataLoader(
+                datasetGT2, batch_size=parameters["batch_size"], shuffle=False, num_workers=8, collate_fn=collate
+            )
 
             # reconstructedloader = NewDataloader("rc", model, dataiterator, device)
             motionloader = NewDataloader("gen", model, dataiterator, device)
@@ -108,10 +108,12 @@ def evaluate(parameters, folder, checkpointname, epoch, niter):
             gt_motionloader2 = NewDataloader("gt", model, dataiterator2, device)
 
             # Action2motionEvaluation
-            loaders = {"gen": motionloader,
-                       # "recons": reconstructedloader,
-                       "gt": gt_motionloader,
-                       "gt2": gt_motionloader2}
+            loaders = {
+                "gen": motionloader,
+                # "recons": reconstructedloader,
+                "gt": gt_motionloader,
+                "gt2": gt_motionloader2,
+            }
 
             a2mmetrics[seed] = a2mevaluation.evaluate(model, loaders)
 
@@ -124,7 +126,12 @@ def evaluate(parameters, folder, checkpointname, epoch, niter):
         string = "Saving the evaluation before exiting.."
         print(string)
 
-    metrics = {"feats": {key: [format_metrics(a2mmetrics[seed])[key] for seed in a2mmetrics.keys()] for key in a2mmetrics[allseeds[0]]}}
+    metrics = {
+        "feats": {
+            key: [format_metrics(a2mmetrics[seed])[key] for seed in a2mmetrics.keys()]
+            for key in a2mmetrics[allseeds[0]]
+        }
+    }
     # "xyz": {key: [format_metrics(joints_metrics[seed])[key] for seed in allseeds] for key in joints_metrics[allseeds[0]]},
     # model.pose_rep: {key: [format_metrics(pose_metrics[seed])[key] for seed in allseeds] for key in pose_metrics[allseeds[0]]}}
 

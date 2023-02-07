@@ -1,12 +1,13 @@
 import os
+import pickle as pkl
 
 import numpy as np
-import pickle as pkl
-import src.utils.rotation_conversions as geometry
 import torch
 
-from .dataset import Dataset
-from .ntu13 import action2motion_joints
+import src.utils.rotation_conversions as geometry
+
+from src.datasets.dataset import Dataset
+from src.datasets.ntu13 import action2motion_joints
 
 
 def get_z(cam_s, cam_pos, joints, img_size, flength):
@@ -32,11 +33,13 @@ def get_trans_from_vibe(vibe, index, use_z=True):
         x = cam_orig[2]
         y = cam_orig[3]
         if use_z:
-            z = get_z(cam_s=cam_orig[0],  # TODO: There are two scales instead of 1.
-                      cam_pos=cam_orig[2:4],
-                      joints=vibe['joints3d'][index][t],
-                      img_size=540,
-                      flength=500)
+            z = get_z(
+                cam_s=cam_orig[0],  # TODO: There are two scales instead of 1.
+                cam_pos=cam_orig[2:4],
+                joints=vibe["joints3d"][index][t],
+                img_size=540,
+                flength=500,
+            )
             # z = 500 / (0.5 * 480 * cam_orig[0])
         else:
             z = 0
@@ -56,19 +59,21 @@ class UESTC(Dataset):
         super().__init__(**kargs)
 
         # Load pre-computed #frames data
-        with open(os.path.join(datapath, 'info', 'num_frames_min.txt'), 'r') as f:
+        with open(os.path.join(datapath, "info", "num_frames_min.txt"), "r") as f:
             num_frames_video = np.asarray([int(s) for s in f.read().splitlines()])
 
         # Out of 118 subjects -> 51 training, 67 in test
         all_subjects = np.arange(1, 119)
+        # fmt: off
         self._tr_subjects = [
             1, 2, 6, 12, 13, 16, 21, 24, 28, 29, 30, 31, 33, 35, 39, 41, 42, 45, 47, 50,
             52, 54, 55, 57, 59, 61, 63, 64, 67, 69, 70, 71, 73, 77, 81, 84, 86, 87, 88,
             90, 91, 93, 96, 99, 102, 103, 104, 107, 108, 112, 113]
+        # fmt: on
         self._test_subjects = [s for s in all_subjects if s not in self._tr_subjects]
 
         # Load names of 25600 videos
-        with open(os.path.join(datapath, 'info', 'names.txt'), 'r') as f:
+        with open(os.path.join(datapath, "info", "names.txt"), "r") as f:
             videos = f.read().splitlines()
 
         self._videos = videos
@@ -86,6 +91,7 @@ class UESTC(Dataset):
             else:
                 self._globtrans = []
                 from tqdm import tqdm
+
                 for index in tqdm(range(len(self._pose))):
                     self._globtrans.append(get_trans_from_vibe(vibe_data, index, use_z=True))
                 pkl.dump(self._globtrans, open("globtrans_usez.pkl", "wb"))
@@ -118,9 +124,9 @@ class UESTC(Dataset):
         self.info_actions = []
 
         def get_rotation(view):
-            theta = - view * np.pi/4
+            theta = -view * np.pi / 4
             axis = torch.tensor([0, 1, 0], dtype=torch.float)
-            axisangle = theta*axis
+            axisangle = theta * axis
             matrix = geometry.axis_angle_to_matrix(axisangle)
             return matrix
 
@@ -129,10 +135,7 @@ class UESTC(Dataset):
 
         for index, video in enumerate(videos):
             act, view, subject, side = self._get_action_view_subject_side(video)
-            self.info_actions.append({"action": act,
-                                      "view": view,
-                                      "subject": subject,
-                                      "side": side})
+            self.info_actions.append({"action": act, "view": view, "subject": subject, "side": side})
             if self.view == "frontview":
                 if side != 1:
                     continue
@@ -147,7 +150,7 @@ class UESTC(Dataset):
                 self._pose[index][:, :3] = geometry.matrix_to_axis_angle(rotation @ global_matrix).numpy()
                 # rotate the joints
                 self._joints[index] = self._joints[index] @ rotation.T.numpy()
-                self._globtrans[index] = (self._globtrans[index] @ rotation.T.numpy())
+                self._globtrans[index] = self._globtrans[index] @ rotation.T.numpy()
 
             # add the global translation to the joints
             self._joints[index] = self._joints[index] + self._globtrans[index][:, None]
@@ -161,7 +164,7 @@ class UESTC(Dataset):
 
         # Select only sequences which have a minimum number of frames
         if self.num_frames > 0:
-            threshold = self.num_frames*3/4
+            threshold = self.num_frames * 3 / 4
         else:
             threshold = 0
 
@@ -171,13 +174,12 @@ class UESTC(Dataset):
         self._test = list(set(self._test))
 
         action_classes_file = os.path.join(datapath, "info/action_classes.txt")
-        with open(action_classes_file, 'r') as f:
+        with open(action_classes_file, "r") as f:
             self._action_classes = np.array(f.read().splitlines())
 
     def _load_joints3D(self, ind, frame_ix):
         if len(self._joints[ind]) == 0:
-            raise ValueError(
-                f"Cannot load index {ind} in _load_joints3D function.")
+            raise ValueError(f"Cannot load index {ind} in _load_joints3D function.")
         if self._jointsIx is not None:
             joints3D = self._joints[ind][frame_ix][:, self._jointsIx]
         else:
@@ -192,7 +194,7 @@ class UESTC(Dataset):
 
     def _get_action_view_subject_side(self, videopath):
         # TODO: Can be moved to tools.py
-        spl = videopath.split('_')
+        spl = videopath.split("_")
         action = int(spl[0][1:])
         view = int(spl[1][1:])
         subject = int(spl[2][1:])
@@ -201,8 +203,7 @@ class UESTC(Dataset):
 
     def _get_videopath(self, action, view, subject, side):
         # Unused function
-        return 'a{:d}_d{:d}_p{:03d}_c{:d}_color.avi'.format(
-            action, view, subject, side)
+        return "a{:d}_d{:d}_p{:03d}_c{:d}_color.avi".format(action, view, subject, side)
 
     def parse_action(self, path, return_int=True):
         # Override parent method

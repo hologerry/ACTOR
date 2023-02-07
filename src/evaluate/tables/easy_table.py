@@ -1,9 +1,10 @@
-import os
 import glob
 import math
+import os
+
 import numpy as np
 
-from ..tools import load_metrics
+from src.evaluate.tools import load_metrics
 
 
 def get_gtname(mname):
@@ -21,15 +22,15 @@ def get_reconsname(mname):
 def valformat(val, power=3):
     p = float(pow(10, power))
     # "{:<04}".format(np.round(p*val).astype(int)/p)
-    return str(np.round(p*val).astype(int)/p).ljust(4, "0")
+    return str(np.round(p * val).astype(int) / p).ljust(4, "0")
 
 
 def format_values(values, key, latex=True):
     mean = np.mean(values)
 
     if "accuracy" in key:
-        mean = 100*mean
-        values = 100*values
+        mean = 100 * mean
+        values = 100 * values
         smean = valformat(mean, 1)
     else:
         smean = valformat(mean, 2)

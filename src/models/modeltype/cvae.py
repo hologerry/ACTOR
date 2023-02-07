@@ -1,4 +1,5 @@
 import torch
+
 from .cae import CAE
 
 
@@ -18,7 +19,7 @@ class CVAE(CAE):
         return z
 
     def forward(self, batch):
-        
+
         if self.outputxyz:
             batch["x_xyz"] = self.rot2xyz(batch["x"], batch["mask"])
         elif self.pose_rep == "xyz":
@@ -26,10 +27,10 @@ class CVAE(CAE):
         # encode
         batch.update(self.encoder(batch))
         batch["z"] = self.reparameterize(batch)
-        
+
         # decode
         batch.update(self.decoder(batch))
-        
+
         # if we want to output xyz
         if self.outputxyz:
             batch["output_xyz"] = self.rot2xyz(batch["output"], batch["mask"])

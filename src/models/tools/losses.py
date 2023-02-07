@@ -1,5 +1,6 @@
 import torch
 import torch.nn.functional as F
+
 from .hessian_penalty import hessian_penalty
 from .mmd import compute_mmd
 
@@ -11,8 +12,8 @@ def compute_rc_loss(model, batch):
 
     gtmasked = x.permute(0, 3, 1, 2)[mask]
     outmasked = output.permute(0, 3, 1, 2)[mask]
-    
-    loss = F.mse_loss(gtmasked, outmasked, reduction='mean')
+
+    loss = F.mse_loss(gtmasked, outmasked, reduction="mean")
     return loss
 
 
@@ -23,38 +24,38 @@ def compute_rcxyz_loss(model, batch):
 
     gtmasked = x.permute(0, 3, 1, 2)[mask]
     outmasked = output.permute(0, 3, 1, 2)[mask]
-    
-    loss = F.mse_loss(gtmasked, outmasked, reduction='mean')
+
+    loss = F.mse_loss(gtmasked, outmasked, reduction="mean")
     return loss
 
 
 def compute_vel_loss(model, batch):
     x = batch["x"]
     output = batch["output"]
-    gtvel = (x[..., 1:] - x[..., :-1])
-    outputvel = (output[..., 1:] - output[..., :-1])
+    gtvel = x[..., 1:] - x[..., :-1]
+    outputvel = output[..., 1:] - output[..., :-1]
 
     mask = batch["mask"][..., 1:]
-    
+
     gtvelmasked = gtvel.permute(0, 3, 1, 2)[mask]
     outvelmasked = outputvel.permute(0, 3, 1, 2)[mask]
-    
-    loss = F.mse_loss(gtvelmasked, outvelmasked, reduction='mean')
+
+    loss = F.mse_loss(gtvelmasked, outvelmasked, reduction="mean")
     return loss
 
 
 def compute_velxyz_loss(model, batch):
     x = batch["x_xyz"]
     output = batch["output_xyz"]
-    gtvel = (x[..., 1:] - x[..., :-1])
-    outputvel = (output[..., 1:] - output[..., :-1])
+    gtvel = x[..., 1:] - x[..., :-1]
+    outputvel = output[..., 1:] - output[..., :-1]
 
     mask = batch["mask"][..., 1:]
-    
+
     gtvelmasked = gtvel.permute(0, 3, 1, 2)[mask]
     outvelmasked = outputvel.permute(0, 3, 1, 2)[mask]
-    
-    loss = F.mse_loss(gtvelmasked, outvelmasked, reduction='mean')
+
+    loss = F.mse_loss(gtvelmasked, outvelmasked, reduction="mean")
     return loss
 
 
@@ -76,9 +77,15 @@ def compute_mmd_loss(model, batch):
     return loss
 
 
-_matching_ = {"rc": compute_rc_loss, "kl": compute_kl_loss, "hp": compute_hp_loss,
-              "mmd": compute_mmd_loss, "rcxyz": compute_rcxyz_loss,
-              "vel": compute_vel_loss, "velxyz": compute_velxyz_loss}
+_matching_ = {
+    "rc": compute_rc_loss,
+    "kl": compute_kl_loss,
+    "hp": compute_hp_loss,
+    "mmd": compute_mmd_loss,
+    "rcxyz": compute_rcxyz_loss,
+    "vel": compute_vel_loss,
+    "velxyz": compute_velxyz_loss,
+}
 
 
 def get_loss_function(ltype):

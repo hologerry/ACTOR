@@ -1,8 +1,8 @@
 import argparse
 import os
 
-from .tools import load_args
 from .base import add_cuda_options, adding_cuda
+from .tools import load_args
 
 
 def parser():
@@ -15,16 +15,14 @@ def parser():
 
     # cuda options
     add_cuda_options(parser)
-    
+
     opt = parser.parse_args()
     newparameters = {key: val for key, val in vars(opt).items() if val is not None}
-    
+
     folder, checkpoint = os.path.split(newparameters["checkpointname"])
     parameters = load_args(os.path.join(folder, "opt.yaml"))
     parameters.update(newparameters)
     adding_cuda(parameters)
 
-    epoch = int(checkpoint.split("_")[1].split('.')[0])
+    epoch = int(checkpoint.split("_")[1].split(".")[0])
     return parameters, folder, checkpoint, epoch, opt.niter
-
-

@@ -1,20 +1,22 @@
-import torch
-from tqdm import tqdm
-
-from src.utils.fixseed import fixseed
-
-from src.evaluate.stgcn.evaluate import Evaluation as STGCNEvaluation
-# from src.evaluate.othermetrics.evaluation import Evaluation
-
-from torch.utils.data import DataLoader
-from src.utils.tensors import collate
-
 import os
 
-from .tools import save_metrics, format_metrics
-from src.models.get_model import get_model as get_gen_model
-from src.datasets.get_dataset import get_datasets
+import torch
+
+from torch.utils.data import DataLoader
+from tqdm import tqdm
+
 import src.utils.rotation_conversions as geometry
+
+from src.datasets.get_dataset import get_datasets
+from src.evaluate.stgcn.evaluate import Evaluation as STGCNEvaluation
+from src.models.get_model import get_model as get_gen_model
+from src.utils.fixseed import fixseed
+from src.utils.tensors import collate
+
+from .tools import format_metrics, save_metrics
+
+
+# from src.evaluate.othermetrics.evaluation import Evaluation
 
 
 def convert_x_to_rot6d(x, pose_rep):
@@ -77,7 +79,7 @@ class NewDataloader:
 
 
 def evaluate(parameters, folder, checkpointname, epoch, niter):
-    torch.multiprocessing.set_sharing_strategy('file_system')
+    torch.multiprocessing.set_sharing_strategy("file_system")
 
     bs = parameters["batch_size"]
     doing_recons = False
@@ -116,12 +118,9 @@ def evaluate(parameters, folder, checkpointname, epoch, niter):
 
     compute_gt_gt = False
     if compute_gt_gt:
-        datasetGT = {key: [get_datasets(parameters)[key],
-                           get_datasets(parameters)[key]]
-                     for key in ["train", "test"]}
+        datasetGT = {key: [get_datasets(parameters)[key], get_datasets(parameters)[key]] for key in ["train", "test"]}
     else:
-        datasetGT = {key: [get_datasets(parameters)[key]]
-                     for key in ["train", "test"]}
+        datasetGT = {key: [get_datasets(parameters)[key]] for key in ["train", "test"]}
 
     print("Dataset loaded")
 
@@ -134,36 +133,33 @@ def evaluate(parameters, folder, checkpointname, epoch, niter):
                 data.reset_shuffle()
                 data.shuffle()
 
-        dataiterator = {key: [DataLoader(data, batch_size=bs,
-                                         shuffle=False, num_workers=8,
-                                         collate_fn=collate)
-                              for data in datasetGT[key]]
-                        for key in ["train", "test"]}
+        dataiterator = {
+            key: [
+                DataLoader(data, batch_size=bs, shuffle=False, num_workers=8, collate_fn=collate)
+                for data in datasetGT[key]
+            ]
+            for key in ["train", "test"]
+        }
 
         if doing_recons:
-            reconsLoaders = {key: NewDataloader("rc", model, parameters,
-                                                dataiterator[key][0],
-                                                device)
-                             for key in ["train", "test"]}
+            reconsLoaders = {
+                key: NewDataloader("rc", model, parameters, dataiterator[key][0], device) for key in ["train", "test"]
+            }
 
-        gtLoaders = {key: NewDataloader("gt", model, parameters,
-                                        dataiterator[key][0],
-                                        device)
-                     for key in ["train", "test"]}
+        gtLoaders = {
+            key: NewDataloader("gt", model, parameters, dataiterator[key][0], device) for key in ["train", "test"]
+        }
 
         if compute_gt_gt:
-            gtLoaders2 = {key: NewDataloader("gt", model, parameters,
-                                             dataiterator[key][1],
-                                             device)
-                          for key in ["train", "test"]}
+            gtLoaders2 = {
+                key: NewDataloader("gt", model, parameters, dataiterator[key][1], device) for key in ["train", "test"]
+            }
 
-        genLoaders = {key: NewDataloader("gen", model, parameters,
-                                         dataiterator[key][0],
-                                         device)
-                      for key in ["train", "test"]}
+        genLoaders = {
+            key: NewDataloader("gen", model, parameters, dataiterator[key][0], device) for key in ["train", "test"]
+        }
 
-        loaders = {"gen": genLoaders,
-                   "gt": gtLoaders}
+        loaders = {"gen": genLoaders, "gt": gtLoaders}
         if doing_recons:
             loaders["recons"] = reconsLoaders
 
@@ -176,7 +172,11 @@ def evaluate(parameters, folder, checkpointname, epoch, niter):
         # joints_metrics = evaluation.evaluate(model, loaders, xyz=True)
         # pose_metrics = evaluation.evaluate(model, loaders, xyz=False)
 
-    metrics = {"feats": {key: [format_metrics(stgcn_metrics[seed])[key] for seed in allseeds] for key in stgcn_metrics[allseeds[0]]}}
+    metrics = {
+        "feats": {
+            key: [format_metrics(stgcn_metrics[seed])[key] for seed in allseeds] for key in stgcn_metrics[allseeds[0]]
+        }
+    }
     # "xyz": {key: [format_metrics(joints_metrics[seed])[key] for seed in allseeds] for key in joints_metrics[allseeds[0]]},
     # model.pose_rep: {key: [format_metrics(pose_metrics[seed])[key] for seed in allseeds] for key in pose_metrics[allseeds[0]]}}
 

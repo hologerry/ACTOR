@@ -1,21 +1,28 @@
-import numpy as np
-import imageio
-import os
 import argparse
+import os
+
+import imageio
+import numpy as np
+
 from tqdm import tqdm
+
 from .renderer import get_renderer
 
 
-def get_rotation(theta=np.pi/3):
-    import src.utils.rotation_conversions as geometry
+def get_rotation(theta=np.pi / 3):
     import torch
+
+    import src.utils.rotation_conversions as geometry
+
     axis = torch.tensor([0, 1, 0], dtype=torch.float)
-    axisangle = theta*axis
+    axisangle = theta * axis
     matrix = geometry.axis_angle_to_matrix(axisangle)
     return matrix.numpy()
 
 
-def render_video(meshes, key, action, renderer, savepath, background, cam=(0.75, 0.75, 0, 0.10), color=[0.11, 0.53, 0.8]):
+def render_video(
+    meshes, key, action, renderer, savepath, background, cam=(0.75, 0.75, 0, 0.10), color=[0.11, 0.53, 0.8]
+):
     writer = imageio.get_writer(savepath, fps=30)
     # center the first frame
     meshes = meshes - meshes[0].mean(axis=0)
@@ -29,7 +36,7 @@ def render_video(meshes, key, action, renderer, savepath, background, cam=(0.75,
         # show(img)
 
     imgs = np.array(imgs)
-    masks = ~(imgs/255. > 0.96).all(-1)
+    masks = ~(imgs / 255.0 > 0.96).all(-1)
 
     coords = np.argwhere(masks.sum(axis=0))
     y1, x1 = coords.min(axis=0)
@@ -52,9 +59,7 @@ def main():
 
     if output.shape[0] == 3:
         visualization, generation, reconstruction = output
-        output = {"visualization": visualization,
-                  "generation": generation,
-                  "reconstruction": reconstruction}
+        output = {"visualization": visualization, "generation": generation, "reconstruction": reconstruction}
     else:
         # output = {f"generation_{key}": output[key] for key in range(2)} #  len(output))}
         # output = {f"generation_{key}": output[key] for key in range(len(output))}

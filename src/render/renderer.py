@@ -5,14 +5,16 @@ This script is borrowed from https://github.com/mkocabas/VIBE
 """
 
 import math
-import trimesh
-import pyrender
-import numpy as np
-from pyrender.constants import RenderFlags
 import os
 
+import numpy as np
+import pyrender
+import trimesh
 
-os.environ['PYOPENGL_PLATFORM'] = 'egl'
+from pyrender.constants import RenderFlags
+
+
+os.environ["PYOPENGL_PLATFORM"] = "egl"
 SMPL_MODEL_DIR = "models/smpl/"
 
 
@@ -21,12 +23,7 @@ def get_smpl_faces():
 
 
 class WeakPerspectiveCamera(pyrender.Camera):
-    def __init__(self,
-                 scale,
-                 translation,
-                 znear=pyrender.camera.DEFAULT_Z_NEAR,
-                 zfar=None,
-                 name=None):
+    def __init__(self, scale, translation, znear=pyrender.camera.DEFAULT_Z_NEAR, zfar=None, name=None):
         super(WeakPerspectiveCamera, self).__init__(
             znear=znear,
             zfar=zfar,
@@ -46,7 +43,9 @@ class WeakPerspectiveCamera(pyrender.Camera):
 
 
 class Renderer:
-    def __init__(self, background=None, resolution=(224, 224), bg_color=[0, 0, 0, 0.5], orig_img=False, wireframe=False):
+    def __init__(
+        self, background=None, resolution=(224, 224), bg_color=[0, 0, 0, 0.5], orig_img=False, wireframe=False
+    ):
         width, height = resolution
         self.background = np.zeros((height, width, 3))
         self.resolution = resolution
@@ -55,9 +54,7 @@ class Renderer:
         self.orig_img = orig_img
         self.wireframe = wireframe
         self.renderer = pyrender.OffscreenRenderer(
-            viewport_width=self.resolution[0],
-            viewport_height=self.resolution[1],
-            point_size=0.5
+            viewport_width=self.resolution[0], viewport_height=self.resolution[1], point_size=0.5
         )
 
         # set the scene
@@ -116,21 +113,15 @@ class Renderer:
 
         sx, sy, tx, ty = cam
 
-        camera = WeakPerspectiveCamera(
-            scale=[sx, sy],
-            translation=[tx, ty],
-            zfar=1000.
-        )
+        camera = WeakPerspectiveCamera(scale=[sx, sy], translation=[tx, ty], zfar=1000.0)
 
         material = pyrender.MetallicRoughnessMaterial(
-            metallicFactor=0.7,
-            alphaMode='OPAQUE',
-            baseColorFactor=(color[0], color[1], color[2], 1.0)
+            metallicFactor=0.7, alphaMode="OPAQUE", baseColorFactor=(color[0], color[1], color[2], 1.0)
         )
 
         mesh = pyrender.Mesh.from_trimesh(mesh, material=material)
 
-        mesh_node = self.scene.add(mesh, 'mesh')
+        mesh_node = self.scene.add(mesh, "mesh")
 
         camera_pose = np.eye(4)
         cam_node = self.scene.add(camera, pose=camera_pose)
@@ -152,8 +143,5 @@ class Renderer:
 
 
 def get_renderer(width, height):
-    renderer = Renderer(resolution=(width, height),
-                        bg_color=[1, 1, 1, 0.5],
-                        orig_img=False,
-                        wireframe=False)
+    renderer = Renderer(resolution=(width, height), bg_color=[1, 1, 1, 0.5], orig_img=False, wireframe=False)
     return renderer

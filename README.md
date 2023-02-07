@@ -61,7 +61,7 @@ bash prepare/download_datasets.sh
 bash prepare/download_smpl_files.sh
 ```
 
-This will download the SMPL neutral model from this [**github repo**](https://github.com/classner/up/blob/master/models/3D/basicModel_neutral_lbs_10_207_0_v1.0.0.pkl) and additionnal files.
+This will download the SMPL neutral model from this [**github repo**](https://github.com/classner/up/blob/master/models/3D/basicModel_neutral_lbs_10_207_0_v1.0.0.pkl) and additional files.
 
 If you want to integrate the male and the female versions, you must:
 - Download the models from the [**SMPL website**](https://smpl.is.tue.mpg.de/)
@@ -69,7 +69,7 @@ If you want to integrate the male and the female versions, you must:
 - Change the ``SMPL_MODEL_PATH`` variable in ``src/config.py`` accordingly.
 
 
-### 4. Download the action recogition models
+### 4. Download the action recognition models
 ```bash
 bash prepare/download_recognition_models.sh
 ```
