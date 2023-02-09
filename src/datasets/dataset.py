@@ -139,10 +139,12 @@ class Dataset(torch.utils.data.Dataset):
                     ret = geometry.axis_angle_to_quaternion(pose)
                 elif pose_rep == "rot6d":
                     ret = geometry.matrix_to_rotation_6d(geometry.axis_angle_to_matrix(pose))
+
         if pose_rep != "xyz" and self.translation:
             padded_tr = torch.zeros((ret.shape[0], ret.shape[2]), dtype=ret.dtype)
             padded_tr[:, :3] = ret_tr
             ret = torch.cat((ret, padded_tr[:, None]), 1)
+
         ret = ret.permute(1, 2, 0).contiguous()
         return ret.float()
 

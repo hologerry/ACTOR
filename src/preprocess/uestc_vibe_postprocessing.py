@@ -13,6 +13,7 @@ import src.utils.rotation_conversions as geometry
 
 W = 960
 H = 540
+# cSpell: disable
 
 
 def get_kinect_motion(tar, videos, index):

@@ -6,6 +6,9 @@ import numpy as np
 from .phspdtools import CameraParams
 
 
+# cSpell: disable
+
+
 def splitname(name):
     subject = name[1:3]
     group = name[4:6]

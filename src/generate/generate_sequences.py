@@ -106,8 +106,8 @@ def generate_actions(
                 generation["output"], generation["mask"], vertstrans=vertstrans, beta=beta
             )
 
-            outxyz = model.rot2xyz(reconstruction["output"], reconstruction["mask"], vertstrans=vertstrans, beta=beta)
-            reconstruction["output_xyz"] = outxyz
+            out_xyz = model.rot2xyz(reconstruction["output"], reconstruction["mask"], vertstrans=vertstrans, beta=beta)
+            reconstruction["output_xyz"] = out_xyz
         else:
             if inter:
                 noise_same_action = "interpolate"
@@ -155,8 +155,8 @@ def main():
         dataset = datasets["train"]  # same for ntu
 
     print("Restore weights..")
-    checkpointpath = os.path.join(folder, checkpointname)
-    state_dict = torch.load(checkpointpath, map_location=parameters["device"])
+    checkpoint_path = os.path.join(folder, checkpointname)
+    state_dict = torch.load(checkpoint_path, map_location=parameters["device"])
     model.load_state_dict(state_dict)
 
     from src.utils.fixseed import fixseed
@@ -186,7 +186,7 @@ def main():
                 onlygen=onlygen,
             )
             if varying_beta:
-                filename = "generation_beta_{}.npy".format(beta)
+                filename = f"generation_beta_{beta}.npy"
             else:
                 filename = "generation.npy"
 

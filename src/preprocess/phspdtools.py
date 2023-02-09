@@ -5,6 +5,9 @@ import pickle
 import numpy as np
 
 
+# cSpell: disable
+
+
 class Transform:
     def __init__(self, R=np.eye(3, dtype="float"), t=np.zeros(3, "float"), s=np.ones(3, "float")):
         self.R = R.copy()  # rotation

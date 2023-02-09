@@ -15,15 +15,15 @@ def get_rotation(theta=np.pi / 3):
     import src.utils.rotation_conversions as geometry
 
     axis = torch.tensor([0, 1, 0], dtype=torch.float)
-    axisangle = theta * axis
-    matrix = geometry.axis_angle_to_matrix(axisangle)
+    axis_angle = theta * axis
+    matrix = geometry.axis_angle_to_matrix(axis_angle)
     return matrix.numpy()
 
 
 def render_video(
-    meshes, key, action, renderer, savepath, background, cam=(0.75, 0.75, 0, 0.10), color=[0.11, 0.53, 0.8]
+    meshes, key, action, renderer, save_path, background, cam=(0.75, 0.75, 0, 0.10), color=[0.11, 0.53, 0.8]
 ):
-    writer = imageio.get_writer(savepath, fps=30)
+    writer = imageio.get_writer(save_path, fps=30)
     # center the first frame
     meshes = meshes - meshes[0].mean(axis=0)
     # matrix = get_rotation(theta=np.pi/4)
@@ -42,8 +42,8 @@ def render_video(
     y1, x1 = coords.min(axis=0)
     y2, x2 = coords.max(axis=0)
 
-    for cimg in imgs[:, y1:y2, x1:x2]:
-        writer.append_data(cimg)
+    for c_img in imgs[:, y1:y2, x1:x2]:
+        writer.append_data(c_img)
     writer.close()
 
 
@@ -52,8 +52,8 @@ def main():
     parser.add_argument("filename")
     opt = parser.parse_args()
     filename = opt.filename
-    savefolder = os.path.splitext(filename)[0]
-    os.makedirs(savefolder, exist_ok=True)
+    save_folder = os.path.splitext(filename)[0]
+    os.makedirs(save_folder, exist_ok=True)
 
     output = np.load(filename)
 
@@ -86,10 +86,10 @@ def main():
 
     # if str(action) == str(1) and str(key) == "generation_4":
     for key in output:
-        vidmeshes = output[key]
-        for action in range(len(vidmeshes)):
-            meshes = vidmeshes[action].transpose(2, 0, 1)
-            path = os.path.join(savefolder, "action{}_{}.mp4".format(action, key))
+        vid_meshes = output[key]
+        for action in range(len(vid_meshes)):
+            meshes = vid_meshes[action].transpose(2, 0, 1)
+            path = os.path.join(save_folder, "action{}_{}.mp4".format(action, key))
             render_video(meshes, key, action, renderer, path, background)
 
 

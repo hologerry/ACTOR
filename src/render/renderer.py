@@ -1,6 +1,6 @@
 """
 This script is borrowed from https://github.com/mkocabas/VIBE
- Adhere to their licence to use this script
+ Adhere to their license to use this script
  It has been modified
 """
 
@@ -24,11 +24,7 @@ def get_smpl_faces():
 
 class WeakPerspectiveCamera(pyrender.Camera):
     def __init__(self, scale, translation, znear=pyrender.camera.DEFAULT_Z_NEAR, zfar=None, name=None):
-        super(WeakPerspectiveCamera, self).__init__(
-            znear=znear,
-            zfar=zfar,
-            name=name,
-        )
+        super().__init__(znear=znear, zfar=zfar, name=name)
         self.scale = scale
         self.translation = translation
 
