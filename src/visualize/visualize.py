@@ -11,22 +11,22 @@ from .anim import load_anim, plot_3d_motion_dico
 
 
 def stack_images(real, real_gens, gen):
-    nleft_cols = len(real_gens) + 1
+    n_left_cols = len(real_gens) + 1
     print("Stacking frames..")
-    allframes = np.concatenate((real[:, None, ...], *[x[:, None, ...] for x in real_gens], gen), 1)
-    nframes, nspa, nats, h, w, pix = allframes.shape
-    blackborder = np.zeros((w // 30, h * nats, pix), dtype=allframes.dtype)
+    all_frames = np.concatenate((real[:, None, ...], *[x[:, None, ...] for x in real_gens], gen), 1)
+    n_frames, nspa, nats, h, w, pix = all_frames.shape
+    black_border = np.zeros((w // 30, h * nats, pix), dtype=all_frames.dtype)
     frames = []
-    for frame_idx in tqdm(range(nframes)):
-        columns = np.vstack(allframes[frame_idx].transpose(1, 2, 3, 4, 0)).transpose(3, 1, 0, 2)
-        frame = np.concatenate((*columns[0:nleft_cols], blackborder, *columns[nleft_cols:]), 0).transpose(1, 0, 2)
+    for frame_idx in tqdm(range(n_frames)):
+        columns = np.vstack(all_frames[frame_idx].transpose(1, 2, 3, 4, 0)).transpose(3, 1, 0, 2)
+        frame = np.concatenate((*columns[0:n_left_cols], black_border, *columns[n_left_cols:]), 0).transpose(1, 0, 2)
         frames.append(frame)
     return np.stack(frames)
 
 
 def generate_by_video(visualization, reconstructions, generation, label_to_action_name, params, nats, nspa, tmp_path):
     # shape : (17, 3, 4, 480, 640, 3)
-    # (nframes, row, column, h, w, 3)
+    # (n_frames, row, column, h, w, 3)
     fps = params["fps"]
 
     params = params.copy()
@@ -145,14 +145,14 @@ def viz_epoch(model, dataset, epoch, params, folder, writer=None):
     # define some classes
     classes = torch.randperm(num_classes)[:nats]
 
-    meandurations = torch.from_numpy(np.array([round(dataset.get_mean_length_label(cl.item())) for cl in classes]))
+    mean_durations = torch.from_numpy(np.array([round(dataset.get_mean_length_label(cl.item())) for cl in classes]))
 
     if duration_mode == "interpolate" or decoder_test == "diffduration":
         points, step = np.linspace(-nspa, nspa, nspa, retstep=True)
         points = np.round(10 * points / step).astype(int)
-        gendurations = meandurations.repeat((nspa, 1)) + points[:, None]
+        gendurations = mean_durations.repeat((nspa, 1)) + points[:, None]
     else:
-        gendurations = meandurations.repeat((nspa, 1))
+        gendurations = mean_durations.repeat((nspa, 1))
 
     # extract the real samples
     real_samples, mask_real, real_lengths = dataset.get_label_sample_batch(classes.numpy())
@@ -271,7 +271,7 @@ def viz_epoch(model, dataset, epoch, params, folder, writer=None):
         else:
             generation[key] = val.reshape(nspa, nats, *val.shape[1:])
 
-    finalpath = os.path.join(folder, figname + ".gif")
+    final_path = os.path.join(folder, figname + ".gif")
     tmp_path = os.path.join(folder, f"subfigures_{figname}")
     os.makedirs(tmp_path, exist_ok=True)
 
@@ -280,8 +280,8 @@ def viz_epoch(model, dataset, epoch, params, folder, writer=None):
         visualization, reconstructions, generation, dataset.label_to_action_name, params, nats, nspa, tmp_path
     )
 
-    print(f"Writing video {finalpath}..")
-    imageio.mimsave(finalpath, frames, fps=params["fps"])
+    print(f"Writing video {final_path}..")
+    imageio.mimsave(final_path, frames, fps=params["fps"])
 
     if writer is not None:
         writer.add_video(f"Video/Epoch {epoch}", frames.transpose(0, 3, 1, 2)[None], epoch, fps=params["fps"])
@@ -303,15 +303,15 @@ def viz_dataset(dataset, params, folder):
     # define some classes
     classes = torch.randperm(num_classes)[:nats]
 
-    allclasses = classes.repeat(nspa, 1).reshape(nspa * nats)
+    all_classes = classes.repeat(nspa, 1).reshape(nspa * nats)
     # extract the real samples
-    real_samples, mask_real, real_lengths = dataset.get_label_sample_batch(allclasses.numpy())
+    real_samples, mask_real, real_lengths = dataset.get_label_sample_batch(all_classes.numpy())
     # to visualize directly
 
     # Visualization of real samples
     visualization = {
         "x": real_samples,
-        "y": allclasses,
+        "y": all_classes,
         "mask": mask_real,
         "lengths": real_lengths,
         "output": real_samples,
@@ -339,20 +339,20 @@ def viz_dataset(dataset, params, folder):
         else:
             visualization[key] = val.reshape(nspa, nats, *val.shape[1:])
 
-    finalpath = os.path.join(folder, figname + ".gif")
+    final_path = os.path.join(folder, figname + ".gif")
     tmp_path = os.path.join(folder, f"subfigures_{figname}")
     os.makedirs(tmp_path, exist_ok=True)
 
     print("Generate the videos..")
     frames = generate_by_video_sequences(visualization, dataset.label_to_action_name, params, nats, nspa, tmp_path)
 
-    print(f"Writing video {finalpath}..")
-    imageio.mimsave(finalpath, frames, fps=params["fps"])
+    print(f"Writing video {final_path}..")
+    imageio.mimsave(final_path, frames, fps=params["fps"])
 
 
 def generate_by_video_sequences(visualization, label_to_action_name, params, nats, nspa, tmp_path):
     # shape : (17, 3, 4, 480, 640, 3)
-    # (nframes, row, column, h, w, 3)
+    # (n_frames, row, column, h, w, 3)
     fps = params["fps"]
 
     if "output_xyz" in visualization:
@@ -401,11 +401,11 @@ def generate_by_video_sequences(visualization, label_to_action_name, params, nat
 
 def stack_images_sequence(visu):
     print("Stacking frames..")
-    allframes = visu
-    nframes, nspa, nats, h, w, pix = allframes.shape
+    all_frames = visu
+    n_frames, nspa, nats, h, w, pix = all_frames.shape
     frames = []
-    for frame_idx in tqdm(range(nframes)):
-        columns = np.vstack(allframes[frame_idx].transpose(1, 2, 3, 4, 0)).transpose(3, 1, 0, 2)
+    for frame_idx in tqdm(range(n_frames)):
+        columns = np.vstack(all_frames[frame_idx].transpose(1, 2, 3, 4, 0)).transpose(3, 1, 0, 2)
         frame = np.concatenate(columns).transpose(1, 0, 2)
         frames.append(frame)
     return np.stack(frames)

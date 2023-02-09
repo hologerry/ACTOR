@@ -3,8 +3,6 @@ import os
 import matplotlib.pyplot as plt
 import torch
 
-import src.utils.fixseed
-
 from src.parser.visualize import parser
 from src.utils.get_model_and_data import get_model_and_data
 
@@ -22,8 +20,8 @@ def main():
     dataset = datasets["train"]
 
     print("Restore weights..")
-    checkpointpath = os.path.join(folder, checkpointname)
-    state_dict = torch.load(checkpointpath, map_location=parameters["device"])
+    checkpoint_path = os.path.join(folder, checkpointname)
+    state_dict = torch.load(checkpoint_path, map_location=parameters["device"])
     model.load_state_dict(state_dict)
 
     # visualize_params

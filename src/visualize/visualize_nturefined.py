@@ -18,7 +18,7 @@ def viz_ntu13(dataset, device):
 
     rot2xyz = Rotation2xyz(device)
 
-    realsamples = []
+    real_samples = []
     pose18samples = []
     pose24samples = []
 
@@ -29,14 +29,14 @@ def viz_ntu13(dataset, device):
     for i in range(1, 2):
         dataset.pose_rep = "xyz"
         x_xyz = dataset[i][0]
-        realsamples.append(x_xyz)
+        real_samples.append(x_xyz)
 
         dataset.pose_rep = "rotvec"
         pose = dataset[i][0]
         mask = torch.ones(pose.shape[2], dtype=bool)
 
         # from src.models.smpl import SMPL
-        # smplmodel = SMPL().eval().to(device)
+        # smpl_model = SMPL().eval().to(device)
         # import ipdb; ipdb.set_trace()
         pose24 = rot2xyz(
             pose[None], mask[None], pose_rep="rotvec", jointstype="smpl", glob=True, translation=translation
@@ -59,7 +59,7 @@ def viz_ntu13(dataset, device):
     params = {"pose_rep": "xyz"}
     for i in [0]:
         for x_xyz, title in zip(
-            [pose24samples[i], pose18samples[i], realsamples[i]], ["pose_to_24", "pose_to_18", "action2motion_18"]
+            [pose24samples[i], pose18samples[i], real_samples[i]], ["pose_to_24", "pose_to_18", "action2motion_18"]
         ):
             save_path = title + ".gif"
             plot_3d_motion(x_xyz, x_xyz.shape[-1], save_path, params, title=title)

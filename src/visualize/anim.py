@@ -6,6 +6,7 @@ import torch
 # from action2motion
 # Define a kinematic tree for the skeletal structure
 # fmt: off
+# cSpell: disable
 humanact12_kinematic_chain = [[0, 1, 4, 7, 10],
                               [0, 2, 5, 8, 11],
                               [0, 3, 6, 9, 12, 15],
@@ -56,9 +57,7 @@ def plot_3d_motion(motion, length, save_path, params, title="", interval=50):
     import matplotlib
     import matplotlib.pyplot as plt
 
-    from matplotlib.animation import FuncAnimation, writers  # noqa: F401
-    from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
-    from mpl_toolkits.mplot3d.art3d import Poly3DCollection  # noqa: F401
+    from matplotlib.animation import FuncAnimation
 
     # import mpl_toolkits.mplot3d.axes3d as p3
     matplotlib.use("Agg")
@@ -113,8 +112,8 @@ def plot_3d_motion(motion, length, save_path, params, title="", interval=50):
         kinematic_tree = None
 
     def update(index):
-        ax.lines = []
-        ax.collections = []
+        ax.lines.clear()
+        ax.collections.clear()
         if kinematic_tree is not None:
             for chain, color in zip(kinematic_tree, colors):
                 ax.plot(
